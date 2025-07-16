@@ -31,6 +31,21 @@
 
 ---
 
+## Electron本番ビルドで正常動作させるための注意点
+
+1. **vite.config.ts の base オプションは必ず './' に設定してください。**
+   - 例: `export default defineConfig({ base: './', ... })`
+   - これにより、ビルド後のアセットパスが相対パスとなり、Electronのfile://スキームでも正しく読み込まれます。
+2. **パッケージング前に必ず `npm run build` を実行し、dist/ フォルダに静的ファイルを出力してください。**
+3. **electron-main.js では本番時に dist/index.html を loadFile で読み込むようにしてください。**
+   - 例: `win.loadFile(path.join(__dirname, 'dist/index.html'));`
+4. **アセット（画像やCSS、JSなど）は絶対パスではなく、相対パスやViteのimportを使って参照してください。**
+5. **依存パッケージのインストールは `npm install --legacy-peer-deps` を推奨します。**
+
+これらを守ることで、Electronパッケージング後も「真っ白」にならず正常に動作します。
+
+---
+
 ## Electronアプリのビルド・配布方法
 
 ### 1. 依存パッケージのインストール
