@@ -1,0 +1,19 @@
+# Node.js
+node_modules/
+
+# Vite/Electronビルド成果物
+dist/
+*.log
+
+# OSごとの不要ファイル
+.DS_Store
+Thumbs.db
+
+# IDE/エディタ
+.vscode/
+.idea/
+*.swp
+
+# その他
+*.local
+.env 
