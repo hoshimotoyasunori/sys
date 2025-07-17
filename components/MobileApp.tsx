@@ -685,15 +685,15 @@ export default function MobileApp() {
       </main>
 
       {/* フッター（ボトムナビゲーション） */}
-      <footer className="fixed bottom-0 left-0 w-full bg-white border-t flex justify-around items-center h-16 z-20">
+      <footer className="fixed bottom-0 left-0 w-full bg-white border-t flex justify-around items-center h-24 z-20">
         {phases.map(phase => (
           <button
             key={phase.id}
             onClick={() => { setActivePhase(phase.id); setActiveView('phase'); }}
-            className={`flex flex-col items-center justify-center flex-1 py-1 ${activePhase === phase.id && activeView === 'phase' ? 'text-blue-600 font-bold' : 'text-gray-500'}`}
+            className={`flex flex-col items-center justify-center flex-1 py-2 ${activePhase === phase.id && activeView === 'phase' ? 'text-blue-600 font-bold' : 'text-gray-500'}`}
           >
-            <span className="text-xl">{phase.icon}</span>
-            <span className="text-xs mt-1">{phase.label}</span>
+            <span className="text-2xl">{phase.icon}</span>
+            <span className="text-sm mt-1">{phase.label}</span>
           </button>
         ))}
       </footer>
