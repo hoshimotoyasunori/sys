@@ -34,6 +34,8 @@ import { DocumentManager } from './components/DocumentManager';
 import { BasicGuide } from './components/BasicGuide';
 import { DeliverablesChecklist } from './components/DeliverablesChecklist';
 import { Templates } from './components/Templates';
+import { useIsMobile } from './components/ui/use-mobile';
+import MobileApp from './components/MobileApp';
 
 export interface Task {
   id: string;
@@ -399,6 +401,7 @@ const phaseIcons = {
 };
 
 export default function App() {
+  const isMobile = useIsMobile();
   const [phases, setPhases] = useState<Phase[]>(initialPhases);
   const [activePhase, setActivePhase] = useState('requirements-definition');
   const [currentView, setCurrentView] = useState<'phases' | 'guide' | 'checklist' | 'templates'>('phases');
@@ -440,6 +443,10 @@ export default function App() {
   const completedDeliverables = phases.reduce((acc, phase) => 
     acc + phase.deliverables.filter(deliverable => deliverable.status === 'completed').length, 0
   );
+
+  if (isMobile) {
+    return <MobileApp />;
+  }
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
