@@ -2,7 +2,7 @@
 node_modules/
 
 # Vite/Electronビルド成果物
-dist/
+# dist/
 *.log
 
 # OSごとの不要ファイル
