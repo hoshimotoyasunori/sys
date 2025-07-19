@@ -52,5 +52,11 @@ export default defineConfig({
       '@radix-ui/react-label',
     ],
     force: true,
+    esbuildOptions: {
+      resolveExtensions: ['.js', '.jsx', '.ts', '.tsx'],
+    },
+  },
+  define: {
+    'process.env.NODE_ENV': '"production"',
   },
 }); 
