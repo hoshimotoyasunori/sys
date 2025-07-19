@@ -33,9 +33,9 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
-  build: {
-    rollupOptions: {
-      external: [],
+  resolve: {
+    alias: {
+      '@radix-ui/react-dialog': '@radix-ui/react-dialog/dist/index.mjs',
     },
   },
   optimizeDeps: {
@@ -44,5 +44,11 @@ export default defineConfig({
       '@radix-ui/react-slot',
       '@radix-ui/react-label',
     ],
+    force: true,
+  },
+  build: {
+    rollupOptions: {
+      external: [],
+    },
   },
 }); 
