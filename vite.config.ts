@@ -38,11 +38,19 @@ export default defineConfig({
       external: [],
     },
   },
+  resolve: {
+    alias: {
+      '@radix-ui/react-dialog': '@radix-ui/react-dialog',
+      '@radix-ui/react-slot': '@radix-ui/react-slot',
+      '@radix-ui/react-label': '@radix-ui/react-label',
+    },
+  },
   optimizeDeps: {
     include: [
       '@radix-ui/react-dialog',
       '@radix-ui/react-slot',
       '@radix-ui/react-label',
     ],
+    force: true,
   },
 }); 
