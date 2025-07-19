@@ -33,6 +33,11 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
+  resolve: {
+    alias: {
+      '@radix-ui/react-dialog': '@radix-ui/react-dialog',
+    },
+  },
   optimizeDeps: {
     include: [
       '@radix-ui/react-dialog',
@@ -40,6 +45,9 @@ export default defineConfig({
       '@radix-ui/react-label',
     ],
     force: true,
+  },
+  ssr: {
+    noExternal: ['@radix-ui/react-dialog', '@radix-ui/react-slot', '@radix-ui/react-label'],
   },
   build: {
     rollupOptions: {
