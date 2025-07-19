@@ -125,3 +125,4 @@ supabase functions deploy function_name
 ## ライセンス
 
 MIT License
+# Force cache clear
