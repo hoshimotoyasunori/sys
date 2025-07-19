@@ -33,11 +33,6 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
-  resolve: {
-    alias: {
-      '@radix-ui/react-dialog': '@radix-ui/react-dialog/dist/index.mjs',
-    },
-  },
   optimizeDeps: {
     include: [
       '@radix-ui/react-dialog',
