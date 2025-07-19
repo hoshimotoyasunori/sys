@@ -2,11 +2,11 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
-import { Phase, Deliverable } from '../App';
+import { Phase, Deliverable } from './MainApp';
 
 interface DeliverableTrackerProps {
   phase: Phase;
-  onStatusUpdate: (deliverableId: string, status: Deliverable['status']) => void;
+  onStatusUpdate: (deliverableId: string, status: 'pending' | 'in-progress' | 'completed') => void;
 }
 
 export function DeliverableTracker({ phase, onStatusUpdate }: DeliverableTrackerProps) {
@@ -14,7 +14,7 @@ export function DeliverableTracker({ phase, onStatusUpdate }: DeliverableTracker
     switch (status) {
       case 'completed': return 'default';
       case 'in-progress': return 'secondary';
-      case 'not-started': return 'outline';
+      case 'pending': return 'outline';
       default: return 'outline';
     }
   };
@@ -23,7 +23,7 @@ export function DeliverableTracker({ phase, onStatusUpdate }: DeliverableTracker
     switch (status) {
       case 'completed': return '完了';
       case 'in-progress': return '進行中';
-      case 'not-started': return '未着手';
+      case 'pending': return '未着手';
       default: return '未着手';
     }
   };
@@ -48,7 +48,7 @@ export function DeliverableTracker({ phase, onStatusUpdate }: DeliverableTracker
               <span className="text-xs text-gray-500">ステータス:</span>
               <Select
                 value={deliverable.status}
-                onValueChange={(value: Deliverable['status']) => 
+                onValueChange={(value: 'pending' | 'in-progress' | 'completed') => 
                   onStatusUpdate(deliverable.id, value)
                 }
               >
@@ -56,7 +56,7 @@ export function DeliverableTracker({ phase, onStatusUpdate }: DeliverableTracker
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="not-started">未着手</SelectItem>
+                  <SelectItem value="pending">未着手</SelectItem>
                   <SelectItem value="in-progress">進行中</SelectItem>
                   <SelectItem value="completed">完了</SelectItem>
                 </SelectContent>
