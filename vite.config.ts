@@ -57,4 +57,19 @@ export default defineConfig({
     ],
     force: true,
   },
+  resolve: {
+    alias: {
+      '@radix-ui/react-dialog': '@radix-ui/react-dialog/dist/index.js',
+      '@radix-ui/react-accordion': '@radix-ui/react-accordion/dist/index.js',
+      '@radix-ui/react-checkbox': '@radix-ui/react-checkbox/dist/index.js',
+      '@radix-ui/react-dropdown-menu': '@radix-ui/react-dropdown-menu/dist/index.js',
+      '@radix-ui/react-label': '@radix-ui/react-label/dist/index.js',
+      '@radix-ui/react-popover': '@radix-ui/react-popover/dist/index.js',
+      '@radix-ui/react-progress': '@radix-ui/react-progress/dist/index.js',
+      '@radix-ui/react-select': '@radix-ui/react-select/dist/index.js',
+      '@radix-ui/react-slot': '@radix-ui/react-slot/dist/index.js',
+      '@radix-ui/react-tabs': '@radix-ui/react-tabs/dist/index.js',
+      '@radix-ui/react-tooltip': '@radix-ui/react-tooltip/dist/index.js',
+    },
+  },
 }); 
