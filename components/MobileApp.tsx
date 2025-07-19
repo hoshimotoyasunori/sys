@@ -11,7 +11,7 @@ const phases = [
 
 // 進捗サマリー
 function MobilePhaseOverview({ phase }) {
-  const completedTasks = phase.tasks.filter(task => task.completed).length;
+  const completedTasks = phase.tasks.filter(task => task.status === 'completed').length;
   const totalTasks = phase.tasks.length;
   const completedDeliverables = phase.deliverables.filter(d => d.status === 'completed').length;
   const totalDeliverables = phase.deliverables.length;
@@ -64,16 +64,16 @@ function MobileTaskManager({ phase, onTaskUpdate }) {
           <div key={task.id} className="flex items-start gap-3 p-3 border rounded-lg bg-white">
             <input
               type="checkbox"
-              checked={task.completed}
-              onChange={() => onTaskUpdate(task.id, !task.completed)}
+              checked={task.status === 'completed'}
+              onChange={() => onTaskUpdate(task.id, task.status === 'completed' ? 'not-started' : 'completed')}
               className="mt-1 accent-blue-500"
             />
             <div className="flex-1 space-y-1">
               <div className="flex items-center gap-2">
-                <span className={`text-sm ${task.completed ? 'line-through text-gray-400' : ''}`}>{task.title}</span>
+                <span className={`text-sm ${task.status === 'completed' ? 'line-through text-gray-400' : ''}`}>{task.title}</span>
                 <span className={`px-2 py-0.5 rounded text-xs font-bold ${getPriorityColor(task.priority)}`}>{getPriorityLabel(task.priority)}</span>
               </div>
-              <p className={`text-xs text-gray-600 ${task.completed ? 'line-through' : ''}`}>{task.description}</p>
+              <p className={`text-xs text-gray-600 ${task.status === 'completed' ? 'line-through' : ''}`}>{task.description}</p>
             </div>
           </div>
         ))}
@@ -541,7 +541,7 @@ function MobileDocumentManager() {
           <div className="bg-white rounded-xl p-6 w-full max-w-xs space-y-4 shadow-lg">
             <h3 className="font-bold text-lg mb-2">新規ドキュメントアップロード</h3>
             <input className="w-full border rounded px-2 py-1" placeholder="ファイル名.md" value={newDoc.name} onChange={e => setNewDoc({ ...newDoc, name: e.target.value })} />
-            <select className="w-full border rounded px-2 py-1" value={newDoc.type} onChange={e => setNewDoc({ ...newDoc, type: e.target.value })}>
+            <select className="w-full border rounded px-2 py-1 bg-white shadow-sm" value={newDoc.type} onChange={e => setNewDoc({ ...newDoc, type: e.target.value })}>
               <option value="requirements-definition">要件定義</option>
               <option value="basic-design">基本設計</option>
               <option value="external-design">外部設計</option>
@@ -573,9 +573,9 @@ export default function MobileApp() {
     'requirements-definition': {
       title: '要件定義',
       tasks: [
-        { id: 't1', title: '目的・目標の明確化', description: 'プロジェクトの目的や目標を明確にする', completed: false, priority: 'high' },
-        { id: 't2', title: '現状分析', description: '現状業務の分析と課題特定', completed: false, priority: 'high' },
-        { id: 't3', title: 'ヒアリング', description: 'ユーザーヒアリングと要求収集', completed: false, priority: 'medium' },
+        { id: 't1', title: '目的・目標の明確化', description: 'プロジェクトの目的や目標を明確にする', status: 'not-started', priority: 'high' },
+        { id: 't2', title: '現状分析', description: '現状業務の分析と課題特定', status: 'not-started', priority: 'high' },
+        { id: 't3', title: 'ヒアリング', description: 'ユーザーヒアリングと要求収集', status: 'not-started', priority: 'medium' },
       ],
       deliverables: [
         { id: 'd1', title: '企画書', description: 'システム開発の目的や期待効果をまとめた文書', status: 'not-started' },
@@ -585,8 +585,8 @@ export default function MobileApp() {
     'basic-design': {
       title: '基本設計',
       tasks: [
-        { id: 't1', title: 'システム構成設計', description: '全体アーキテクチャ設計', completed: false, priority: 'high' },
-        { id: 't2', title: 'DB設計', description: 'データベース論理・物理設計', completed: false, priority: 'high' },
+        { id: 't1', title: 'システム構成設計', description: '全体アーキテクチャ設計', status: 'not-started', priority: 'high' },
+        { id: 't2', title: 'DB設計', description: 'データベース論理・物理設計', status: 'not-started', priority: 'high' },
       ],
       deliverables: [
         { id: 'd1', title: '基本設計書', description: 'システム全体像を記述した文書', status: 'not-started' },
@@ -595,8 +595,8 @@ export default function MobileApp() {
     'external-design': {
       title: '外部設計',
       tasks: [
-        { id: 't1', title: 'UI設計', description: '画面レイアウトや操作フロー設計', completed: false, priority: 'medium' },
-        { id: 't2', title: 'UX設計', description: 'ユーザー体験の最適化設計', completed: false, priority: 'medium' },
+        { id: 't1', title: 'UI設計', description: '画面レイアウトや操作フロー設計', status: 'not-started', priority: 'medium' },
+        { id: 't2', title: 'UX設計', description: 'ユーザー体験の最適化設計', status: 'not-started', priority: 'medium' },
       ],
       deliverables: [
         { id: 'd1', title: '画面設計書', description: '各画面のレイアウトや要素を記述した文書', status: 'not-started' },
@@ -605,8 +605,8 @@ export default function MobileApp() {
     'development-prep': {
       title: '開発準備',
       tasks: [
-        { id: 't1', title: '環境構築', description: '開発環境のセットアップ', completed: false, priority: 'high' },
-        { id: 't2', title: 'コーディング規約策定', description: 'チーム内のコーディングルール策定', completed: false, priority: 'medium' },
+        { id: 't1', title: '環境構築', description: '開発環境のセットアップ', status: 'not-started', priority: 'high' },
+        { id: 't2', title: 'コーディング規約策定', description: 'チーム内のコーディングルール策定', status: 'not-started', priority: 'medium' },
       ],
       deliverables: [
         { id: 'd1', title: '開発環境手順書', description: '開発環境のセットアップ手順書', status: 'not-started' },
@@ -615,10 +615,10 @@ export default function MobileApp() {
   });
 
   // タスク・成果物の状態更新
-  const handleTaskUpdate = (taskId, completed) => {
+  const handleTaskUpdate = (taskId, status) => {
     setPhaseData(prev => {
       const phase = prev[activePhase];
-      const newTasks = phase.tasks.map(t => t.id === taskId ? { ...t, completed } : t);
+      const newTasks = phase.tasks.map(t => t.id === taskId ? { ...t, status } : t);
       return {
         ...prev,
         [activePhase]: { ...phase, tasks: newTasks },

@@ -1,14 +1,14 @@
 import React from 'react';
 import { Card, CardContent } from './ui/card';
 import { CheckCircle } from 'lucide-react';
-import { Phase } from '../App';
+import { Phase } from './MainApp';
 
 interface PhaseOverviewProps {
   phase: Phase;
 }
 
 export function PhaseOverview({ phase }: PhaseOverviewProps) {
-  const completedTasks = phase.tasks.filter(task => task.completed).length;
+  const completedTasks = phase.tasks.filter(task => task.status === 'completed').length;
   const totalTasks = phase.tasks.length;
   
   const completedDeliverables = phase.deliverables.filter(d => d.status === 'completed').length;

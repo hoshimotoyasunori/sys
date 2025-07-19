@@ -1,143 +1,127 @@
-# システム設計アシスタント（sys）
+# システム設計アシスタント
 
-## 概要
+プロジェクト管理とシステム設計を支援するWebアプリケーションです。
 
-本プロジェクトは、システム開発の「要件定義」「基本設計」「外部設計」「開発準備」までの4フェーズを段階的にサポートするアシスタントアプリケーションです。プロジェクト管理、成果物チェックリスト、ドキュメント管理、テンプレートダウンロードなど、実務で役立つ機能を備えています。
+## 機能
 
----
+### プロジェクト管理
+- プロジェクトの作成・削除・切り替え
+- プロジェクトメンバーの招待・管理
+- リアルタイム同期
 
-## 主な機能
+### システム設計支援
+- 4つのフェーズ（要件定義、基本設計、外部設計、開発準備）
+- 各フェーズのタスク管理
+- 成果物の管理
+- 進捗の可視化
 
-- フェーズ別タスク・成果物管理
-- 成果物チェックリスト（進捗率表示・アコーディオン開閉）
-- ドキュメント管理（タグ・バージョン・一括DL・右サイドバー開閉）
-- テンプレートダウンロード（各フェーズ用の実用的なテンプレート）
-- ダッシュボード風UI（Material 3ベース、レスポンシブ対応）
+### 招待システム
+- メール招待機能
+- 招待の受け入れ・辞退
+- 権限管理（オーナー、管理者、メンバー）
 
----
+## 技術スタック
 
-## セットアップ手順
+- **フロントエンド**: React + TypeScript + Vite
+- **UI**: Tailwind CSS + shadcn/ui
+- **バックエンド**: Supabase (PostgreSQL)
+- **認証**: Supabase Auth
+- **リアルタイム**: Supabase Realtime
+- **メール**: Supabase Edge Functions
 
-1. 依存パッケージのインストール
-   ```sh
-   npm install --legacy-peer-deps
-   ```
-   ※依存関係の衝突を回避するため、必ず--legacy-peer-depsオプションを付けてインストールしてください。
-2. 開発サーバーの起動
-   ```sh
-   npm run dev
-   ```
-3. ブラウザで `http://localhost:5173`（または表示されたポート）にアクセス
+## セットアップ
 
----
-
-## Electron本番ビルドで正常動作させるための注意点
-
-1. **vite.config.ts の base オプションは必ず './' に設定してください。**
-   - 例: `export default defineConfig({ base: './', ... })`
-   - これにより、ビルド後のアセットパスが相対パスとなり、Electronのfile://スキームでも正しく読み込まれます。
-2. **パッケージング前に必ず `npm run build` を実行し、dist/ フォルダに静的ファイルを出力してください。**
-3. **electron-main.js では本番時に dist/index.html を loadFile で読み込むようにしてください。**
-   - 例: `win.loadFile(path.join(__dirname, 'dist/index.html'));`
-4. **アセット（画像やCSS、JSなど）は絶対パスではなく、相対パスやViteのimportを使って参照してください。**
-5. **依存パッケージのインストールは `npm install --legacy-peer-deps` を推奨します。**
-
-これらを守ることで、Electronパッケージング後も「真っ白」にならず正常に動作します。
-
----
-
-## Electronアプリのビルド・配布方法
-
-### 1. 依存パッケージのインストール
-```sh
+### 1. 依存関係のインストール
+```bash
 npm install
 ```
 
-### 2. 本番ビルド（Viteで静的ファイル生成）
-```sh
-npm run build
+### 2. 環境変数の設定
+`.env`ファイルを作成し、Supabaseの設定を追加：
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-### 3. Electronパッケージング
-- **Mac用:**
-  ```sh
-  npm run build:mac
-  ```
-- **Windows用:**
-  ```sh
-  npm run build:win
-  ```
-- **両方まとめて:**
-  ```sh
-  npm run build:all
-  ```
+### 3. Supabaseのセットアップ
+```bash
+# Supabase CLIのインストール
+npm install -g supabase
 
-### 4. 出力ファイル
-- `dist_electron/` または `release/` ディレクトリにインストーラー（.dmg, .exe）が生成されます。
+# ローカル開発環境の起動
+supabase start
 
----
+# データベースのリセット（必要に応じて）
+supabase db reset
+```
 
-## セーブポイント1の内容
-- Tailwind CSSの設定ファイル（tailwind.config.js, postcss.config.js）とglobals.cssの修正が完了
-- Viteサーバー起動時のエラー（border-border, outline-ring/50, text-foreground等）がすべて解消
-- UIの基礎スタイルが正しく反映される状態
+### 4. 開発サーバーの起動
+```bash
+npm run dev
+```
 
----
-
-## ディレクトリ構成（主要部分）
+## プロジェクト構造
 
 ```
 sys/
-  ├─ components/
-  │    ├─ ui/ ... UIコンポーネント
-  │    ├─ figma/ ... Figma連携用
-  │    ├─ ... 各種機能コンポーネント
-  ├─ styles/
-  │    └─ globals.css ... グローバルCSS
-  ├─ App.tsx ... ルートコンポーネント
-  ├─ main.tsx ... エントリーポイント
-  ├─ index.html ... Vite用HTML
-  ├─ tailwind.config.js ... Tailwind設定
-  ├─ postcss.config.js ... PostCSS設定
-  └─ README.md ... このファイル
+├── components/          # Reactコンポーネント
+│   ├── ui/             # shadcn/uiコンポーネント
+│   ├── Header.tsx      # ヘッダー
+│   ├── MainApp.tsx     # メインアプリケーション
+│   └── ...
+├── contexts/           # React Context
+│   ├── AuthContext.tsx
+│   ├── ProjectContext.tsx
+│   └── ...
+├── lib/               # ユーティリティ
+│   ├── supabase.ts    # Supabase設定
+│   └── email.ts       # メール機能
+├── supabase/          # Supabase設定
+│   ├── migrations/    # データベースマイグレーション
+│   ├── functions/     # Edge Functions
+│   └── config.toml    # Supabase設定
+└── styles/            # スタイルシート
 ```
 
----
+## 主要機能
+
+### プロジェクト管理
+- プロジェクトの作成・削除
+- プロジェクトメンバーの招待
+- リアルタイム同期
+
+### タスク管理
+- フェーズ別タスク管理
+- チェックボックスによる進捗管理
+- 順番の固定（order_index）
+
+### 成果物管理
+- フェーズ別成果物管理
+- ステータス管理
+- ドキュメント管理
+
+### 招待システム
+- メール招待
+- 招待の受け入れ・辞退
+- 権限管理
+
+## 開発
+
+### データベースマイグレーション
+```bash
+# 新しいマイグレーションの作成
+supabase migration new migration_name
+
+# マイグレーションの適用
+supabase db reset
+```
+
+### Edge Functions
+```bash
+# Edge Functionのデプロイ
+supabase functions deploy function_name
+```
 
 ## ライセンス
 
-MIT
-
----
-
-## エンドユーザー向けインストール手順
-
-### 動作環境
-- **Mac**: macOS 12 Monterey 以降（Intel/Apple Silicon 両対応）
-- **Windows**: Windows 10/11（64bit）
-- **Linux**: Ubuntu 20.04 以降、AppImage/Snap対応ディストリビューション
-
-### インストール方法
-1. 配布されたインストーラー（`*.dmg`, `*.exe`, `*.AppImage` など）をダウンロードします。
-2. 各OSごとに以下の手順でインストールしてください。
-
-#### Macの場合（.dmg）
-- ダウンロードした `.dmg` ファイルをダブルクリックして開き、アプリケーションフォルダにドラッグ＆ドロップしてください。
-- Gatekeeperの警告が出る場合は、右クリック→「開く」で実行できます。
-
-#### Windowsの場合（.exe）
-- ダウンロードした `.exe` ファイルをダブルクリックし、画面の指示に従ってインストールしてください。
-- セキュリティ警告が出る場合は「詳細情報」→「実行」を選択してください。
-
-#### Linuxの場合（.AppImage/Snap）
-- `.AppImage` ファイルの場合は、実行権限を付与してからダブルクリックで起動できます。
-  ```sh
-  chmod +x システム設計アシスタント-*.AppImage
-  ./システム設計アシスタント-*.AppImage
-  ```
-- Snapパッケージの場合は、`snap install` コマンドでインストールしてください。
-
-### 注意事項
-- インストール時にセキュリティ警告が表示される場合がありますが、配布元が信頼できる場合のみ実行してください。
-- アプリの自動アップデート機能はありません。新しいバージョンが配布された場合は再インストールしてください。
-- ご不明点や不具合は配布元までご連絡ください。
+MIT License

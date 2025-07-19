@@ -85,6 +85,82 @@ const defaultTags = [
   "Archived",
 ];
 
+// DocumentCardコンポーネントを追加
+interface DocumentCardProps {
+  document: Document;
+  onEdit: (doc: Document) => void;
+  onDelete: (docId: string) => void;
+  onDownload: (doc: Document) => void;
+}
+
+function DocumentCard({ document: doc, onEdit, onDelete, onDownload }: DocumentCardProps) {
+  const typeInfo = documentTypes[doc.type];
+  
+  return (
+    <div className="border border-gray-200 rounded-lg p-4 hover:shadow-sm transition-shadow">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-2">
+            <h4 className="font-medium text-sm text-gray-900 truncate">
+              {doc.name}
+            </h4>
+            {doc.isLatest && (
+              <Badge variant="default" className="text-xs rounded-full bg-green-500 hover:bg-green-600">
+                最新版
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <Badge variant="outline" className="text-xs rounded-full">
+              {typeInfo.label}
+            </Badge>
+            <span>•</span>
+            <span>{formatFileSize(doc.size)}</span>
+            <span>•</span>
+            <span>更新: {formatDateTimeShort(doc.updateDate)}</span>
+          </div>
+        </div>
+      </div>
+      
+      {doc.description && (
+        <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+          {doc.description}
+        </p>
+      )}
+      
+      <div className="flex justify-end gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onDownload(doc)}
+          className="h-8 px-3 text-xs"
+        >
+          <Download className="h-3 w-3 mr-1" />
+          ダウンロード
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onEdit(doc)}
+          className="h-8 px-3 text-xs"
+        >
+          <Edit className="h-3 w-3 mr-1" />
+          編集
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onDelete(doc.id)}
+          className="h-8 px-3 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+        >
+          <Trash2 className="h-3 w-3 mr-1" />
+          削除
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function DocumentManager({
   phaseId,
 }: DocumentManagerProps) {
@@ -369,268 +445,79 @@ export function DocumentManager({
   ).length;
 
   return (
-    <div className="h-full flex flex-col bg-white">
-      {/* 固定ヘッダー */}
-      <div className="bg-gray-50 border-b border-gray-200 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-medium text-gray-900 flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            ドキュメント管理
-          </h3>
-          <div className="flex items-center gap-2">
-            {latestDocumentsCount > 0 && (
-              <Button
-                onClick={handleDownloadLatestDocuments}
-                size="sm"
-                variant="outline"
-                className="rounded-full text-xs h-8"
-              >
-                <Archive className="h-3 w-3 mr-1" />
-                最新版一括DL ({latestDocumentsCount})
-              </Button>
-            )}
-            <Button
-              onClick={() => setIsUploadDialogOpen(true)}
-              size="sm"
-              className="rounded-full bg-blue-600 hover:bg-blue-700 h-8 w-8 p-0"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+    <div className="flex flex-col h-full">
+      {/* ヘッダー */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">ドキュメント管理</h3>
+          <Button
+            onClick={() => setIsUploadDialogOpen(true)}
+            size="sm"
+            className="h-8 px-3"
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            追加
+          </Button>
+        </div>
+
+        {/* 検索とフィルター */}
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Q 検索..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-9"
+            />
           </div>
+          
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="all">すべての種別</option>
+            <option value="requirements-definition">要件定義</option>
+            <option value="basic-design">基本設計</option>
+            <option value="external-design">外部設計</option>
+            <option value="development-prep">開発準備</option>
+            <option value="other">その他</option>
+          </select>
         </div>
       </div>
 
-      {/* スクロール可能なコンテンツ */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-4 min-w-0">
-          {/* 検索・フィルター */}
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="h-3 w-3 absolute left-3 top-3 text-gray-400" />
-              <Input
-                placeholder="検索..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-8 text-sm rounded-lg border-gray-200"
-              />
+      {/* ドキュメントリスト */}
+      <div className="flex-1 overflow-y-auto p-4">
+        {filteredDocuments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <FileText className="h-8 w-8 text-gray-400" />
             </div>
-            <select
-              value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
+            <h4 className="text-lg font-medium text-gray-900 mb-2">ドキュメントなし</h4>
+            <p className="text-sm text-gray-500 mb-4">追加してください</p>
+            <Button
+              onClick={() => setIsUploadDialogOpen(true)}
+              variant="outline"
+              size="sm"
             >
-              <option value="all">すべての種別</option>
-              {Object.entries(documentTypes).map(
-                ([key, { label }]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ),
-              )}
-            </select>
+              <Plus className="h-4 w-4 mr-2" />
+              ドキュメントを追加
+            </Button>
           </div>
-
-          {/* ドキュメント一覧（アコーディオン） */}
-          <div className="space-y-2">
-            {filteredDocuments.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <FileText className="h-6 w-6 text-gray-300" />
-                </div>
-                <p className="text-sm font-medium">
-                  ドキュメントなし
-                </p>
-                <p className="text-xs text-gray-400 mt-1">
-                  追加してください
-                </p>
-              </div>
-            ) : (
-              <Accordion type="multiple" className="w-full">
-                {filteredDocuments.map((doc) => {
-                  const typeInfo = documentTypes[doc.type];
-                  return (
-                    <AccordionItem
-                      key={doc.id}
-                      value={doc.id}
-                      className="border rounded-lg mb-2 last:mb-0"
-                    >
-                      <AccordionTrigger className="hover:no-underline px-4 py-3">
-                        <div className="flex items-center w-full min-w-0 pr-2">
-                          {/* 左側：メイン情報 */}
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-medium text-sm text-gray-900 truncate">
-                                  {doc.name}
-                                </h4>
-                                {doc.isLatest && (
-                                  <Badge
-                                    variant="default"
-                                    className="text-xs rounded-full bg-green-500 hover:bg-green-600 flex-shrink-0"
-                                  >
-                                    最新版
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 text-xs text-gray-500 truncate">
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs rounded-full flex-shrink-0"
-                                >
-                                  {typeInfo.label}
-                                </Badge>
-                                <span className="flex-shrink-0">
-                                  •
-                                </span>
-                                <span className="flex-shrink-0">
-                                  {formatFileSize(doc.size)}
-                                </span>
-                                <span className="flex-shrink-0">
-                                  •
-                                </span>
-                                <span className="truncate">
-                                  更新:{" "}
-                                  {formatDateTimeShort(
-                                    doc.updateDate,
-                                  )}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* 右側：アクション（閉じている時の簡易表示） */}
-                          <div className="flex items-center gap-2 flex-shrink-0 ml-4"></div>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="px-4 pb-4">
-                        <div className="space-y-4 pt-2 border-t border-gray-100">
-                          {/* タグ */}
-                          {doc.tags.length > 0 && (
-                            <div className="space-y-2">
-                              <h5 className="text-xs font-medium text-gray-700">
-                                タグ
-                              </h5>
-                              <div className="flex flex-wrap gap-1">
-                                {doc.tags.map((tag) => (
-                                  <Badge
-                                    key={tag}
-                                    variant="secondary"
-                                    className="text-xs rounded-full"
-                                  >
-                                    {tag}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* 説明文 */}
-                          {doc.description && (
-                            <div className="space-y-2">
-                              <h5 className="text-xs font-medium text-gray-700">
-                                説明
-                              </h5>
-                              <p className="text-xs text-gray-600">
-                                {doc.description}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* 内容プレビュー */}
-                          {doc.content && (
-                            <div className="space-y-2">
-                              <h5 className="text-xs font-medium text-gray-700">
-                                内容プレビュー
-                              </h5>
-                              <div className="bg-gray-50 rounded-lg p-3 max-h-32 overflow-auto">
-                                <pre className="text-xs text-gray-600 whitespace-pre-wrap font-mono break-words">
-                                  {doc.content.length > 200
-                                    ? `${doc.content.substring(0, 200)}...`
-                                    : doc.content}
-                                </pre>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* 詳細メタ情報 */}
-                          <div className="space-y-2 text-xs text-gray-400 border-t pt-3">
-                            <h5 className="text-xs font-medium text-gray-700">
-                              詳細情報
-                            </h5>
-                            <div className="grid grid-cols-1 gap-1">
-                              <div className="flex items-center gap-2">
-                                <Calendar className="h-3 w-3" />
-                                <span>
-                                  作成:{" "}
-                                  {formatDateTime(
-                                    doc.uploadDate,
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Clock className="h-3 w-3" />
-                                <span>
-                                  更新:{" "}
-                                  {formatDateTime(
-                                    doc.updateDate,
-                                  )}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <User className="h-3 w-3" />
-                                <span>
-                                  作成者: {doc.author}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* アクションボタン */}
-                          <div className="flex justify-end gap-2 pt-3 border-t border-gray-100 flex-wrap">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                handleDownloadDocument(doc)
-                              }
-                              className="h-8 px-3 text-xs flex-shrink-0"
-                            >
-                              <Download className="h-3 w-3 mr-1" />
-                              ダウンロード
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                handleEditDocument(doc);
-                                setIsUploadDialogOpen(true);
-                              }}
-                              className="h-8 px-3 text-xs flex-shrink-0"
-                            >
-                              <Edit className="h-3 w-3 mr-1" />
-                              編集
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                handleDeleteDocument(doc.id)
-                              }
-                              className="h-8 px-3 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 flex-shrink-0"
-                            >
-                              <Trash2 className="h-3 w-3 mr-1" />
-                              削除
-                            </Button>
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  );
-                })}
-              </Accordion>
-            )}
+        ) : (
+          <div className="space-y-3">
+            {filteredDocuments.map((doc) => (
+              <DocumentCard
+                key={doc.id}
+                document={doc}
+                onEdit={handleEditDocument}
+                onDelete={handleDeleteDocument}
+                onDownload={handleDownloadDocument}
+              />
+            ))}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Dialog */}
@@ -646,7 +533,7 @@ export function DocumentManager({
                 : "新しいドキュメント"}
             </DialogTitle>
             <DialogDescription>
-              ファイルをアップロードするか、新規作成してくださ��
+              ファイルをアップロードするか、新規作成してください
             </DialogDescription>
           </DialogHeader>
 
@@ -692,7 +579,7 @@ export function DocumentManager({
                           .value as Document["type"],
                       }))
                     }
-                    className="w-full p-2 border border-gray-200 rounded-xl bg-white"
+                    className="w-full p-2 border border-gray-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     {Object.entries(documentTypes).map(
                       ([key, { label }]) => (
@@ -830,7 +717,7 @@ export function DocumentManager({
                   disabled={!newDocument.name.trim()}
                   className="rounded-full bg-blue-600 hover:bg-blue-700"
                 >
-                  {editingDocument ? "更新" : "��成"}
+                  {editingDocument ? "更新" : "作成"}
                 </Button>
                 <Button
                   variant="outline"
@@ -868,7 +755,7 @@ export function DocumentManager({
                           .value as Document["type"],
                       }))
                     }
-                    className="w-full p-2 border border-gray-200 rounded-xl bg-white"
+                    className="w-full p-2 border border-gray-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     {Object.entries(documentTypes).map(
                       ([key, { label }]) => (
