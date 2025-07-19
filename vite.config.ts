@@ -36,22 +36,6 @@ export default defineConfig({
   build: {
     rollupOptions: {
       external: [],
-      output: {
-        manualChunks: {
-          'radix-ui': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-slot',
-            '@radix-ui/react-label',
-          ],
-        },
-      },
-    },
-  },
-  resolve: {
-    alias: {
-      '@radix-ui/react-dialog': '@radix-ui/react-dialog',
-      '@radix-ui/react-slot': '@radix-ui/react-slot',
-      '@radix-ui/react-label': '@radix-ui/react-label',
     },
   },
   optimizeDeps: {
@@ -60,15 +44,5 @@ export default defineConfig({
       '@radix-ui/react-slot',
       '@radix-ui/react-label',
     ],
-    force: true,
-    esbuildOptions: {
-      resolveExtensions: ['.js', '.jsx', '.ts', '.tsx'],
-    },
-  },
-  define: {
-    'process.env.NODE_ENV': '"production"',
-  },
-  ssr: {
-    noExternal: ['@radix-ui/react-dialog', '@radix-ui/react-slot', '@radix-ui/react-label'],
   },
 }); 
