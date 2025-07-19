@@ -68,4 +68,7 @@ export default defineConfig({
   define: {
     'process.env.NODE_ENV': '"production"',
   },
+  ssr: {
+    noExternal: ['@radix-ui/react-dialog', '@radix-ui/react-slot', '@radix-ui/react-label'],
+  },
 }); 
