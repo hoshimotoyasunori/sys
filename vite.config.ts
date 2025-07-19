@@ -94,5 +94,11 @@ export default defineConfig({
       '@radix-ui/react-tooltip',
     ],
     force: true,
+    esbuildOptions: {
+      resolveExtensions: ['.js', '.jsx', '.ts', '.tsx'],
+    },
+  },
+  define: {
+    'process.env.NODE_ENV': '"production"',
   },
 }); 
