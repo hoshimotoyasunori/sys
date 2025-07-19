@@ -27,7 +27,7 @@
 - **バックエンド**: Supabase (PostgreSQL)
 - **認証**: Supabase Auth
 - **リアルタイム**: Supabase Realtime
-- **メール**: Supabase Edge Functions
+- **メール**: Supabase Edge Functions + Resend
 
 ## セットアップ
 
@@ -37,10 +37,12 @@ npm install
 ```
 
 ### 2. 環境変数の設定
-`.env`ファイルを作成し、Supabaseの設定を追加：
+`.env.local`ファイルを作成し、Supabaseの設定を追加：
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_RESEND_API_KEY=your_resend_api_key
+VITE_FROM_EMAIL=your_from_email
 ```
 
 ### 3. Supabaseのセットアップ
@@ -72,7 +74,7 @@ sys/
 ├── contexts/           # React Context
 │   ├── AuthContext.tsx
 │   ├── ProjectContext.tsx
-│   └── ...
+│   └── ProjectDataContext.tsx
 ├── lib/               # ユーティリティ
 │   ├── supabase.ts    # Supabase設定
 │   └── email.ts       # メール機能
@@ -122,7 +124,15 @@ supabase db reset
 supabase functions deploy function_name
 ```
 
+## ドキュメント
+
+詳細なドキュメントは `docs/` フォルダを参照してください：
+
+- [要件定義書](docs/1.要件定義書.md)
+- [システム設計書](docs/2.システム設計書.md)
+- [機能仕様書](docs/3.機能仕様書.md)
+- [技術仕様書](docs/4.技術仕様書.md)
+
 ## ライセンス
 
 MIT License
-# Force cache clear
