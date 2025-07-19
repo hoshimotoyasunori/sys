@@ -36,6 +36,15 @@ export default defineConfig({
   build: {
     rollupOptions: {
       external: [],
+      output: {
+        manualChunks: {
+          'radix-ui': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-label',
+          ],
+        },
+      },
     },
   },
   resolve: {
