@@ -33,7 +33,7 @@ import { ProjectMembersDialog } from './ProjectMembersDialog';
 import { DeleteProjectDialog } from './DeleteProjectDialog';
 import { ProjectSwitchDialog } from './ProjectSwitchDialog';
 import { CreateProjectDialog } from './CreateProjectDialog';
-import { EmailTestDialog } from './EmailTestDialog';
+
 import { useAuth } from '../contexts/AuthContext';
 import { useProject } from '../contexts/ProjectContext';
 
@@ -234,8 +234,6 @@ export function Header({
                     <Plus className="mr-2 h-4 w-4" />
                     <span>新規プロジェクト作成</span>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <EmailTestDialog />
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleDeleteProject} variant="destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
