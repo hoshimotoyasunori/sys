@@ -404,7 +404,7 @@ const phaseIcons = {
 
 export const MainApp: React.FC = () => {
   const { currentProject } = useProject();
-  const { phases, tasks, deliverables, loading, updateTask, updateDeliverable } = useProjectData();
+  const { phases, tasks, deliverables, loading, updateTask, updateDeliverable, refreshData, createMissingTasksAndDeliverables } = useProjectData();
   const isMobile = useIsMobile();
   const [currentView, setCurrentView] = useState<'phases' | 'guide' | 'checklist' | 'templates'>('phases');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -480,6 +480,24 @@ export const MainApp: React.FC = () => {
 
   const handlePhaseClick = (phase: any) => {
     setActivePhase(phase.id);
+  };
+
+  const handleCreateTasksAndDeliverables = async () => {
+    if (!currentProject || !currentPhase) return;
+    
+    try {
+      console.log('🔄 タスクと成果物を作成中...');
+      
+      // ProjectDataContextのcreateMissingTasksAndDeliverables関数を呼び出し
+      await createMissingTasksAndDeliverables(currentProject.id);
+      
+      // データを再取得
+      await refreshData();
+      
+      console.log('✅ タスクと成果物の作成が完了しました');
+    } catch (error) {
+      console.error('❌ タスクと成果物の作成に失敗しました:', error);
+    }
   };
 
   return (
@@ -642,6 +660,7 @@ export const MainApp: React.FC = () => {
                       onTaskUpdate={(taskId, completed) => 
                         updateTaskCompletion(currentPhase.id, taskId, completed)
                       }
+                      onCreateTasks={handleCreateTasksAndDeliverables}
                     />
                     
                     <DeliverableTracker
@@ -649,6 +668,7 @@ export const MainApp: React.FC = () => {
                       onStatusUpdate={(deliverableId, status) => 
                         updateDeliverableStatus(currentPhase.id, deliverableId, status)
                       }
+                      onCreateDeliverables={handleCreateTasksAndDeliverables}
                     />
                   </div>
                 </div>

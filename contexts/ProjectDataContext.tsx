@@ -48,6 +48,7 @@ interface ProjectDataContextType {
   createInitialPhases: (projectId: string) => Promise<{ error: any }>;
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<{ error: any }>;
   updateDeliverable: (deliverableId: string, updates: Partial<Deliverable>) => Promise<{ error: any }>;
+  createMissingTasksAndDeliverables: (projectId: string) => Promise<void>;
 }
 
 const ProjectDataContext = createContext<ProjectDataContextType | undefined>(undefined);
@@ -118,6 +119,13 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
 
         if (tasksError) throw tasksError;
 
+        console.log('🔍 タスクデータ取得結果:', {
+          projectId: currentProject.id,
+          tasksCount: tasksData?.length || 0,
+          tasksData: tasksData,
+          error: tasksError
+        });
+
         // 重複タスクを除去
         const uniqueTasks = tasksData?.reduce((acc: Task[], task: Task) => {
           const existingTask = acc.find(t => t.id === task.id);
@@ -138,6 +146,13 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
 
         if (deliverablesError) throw deliverablesError;
 
+        console.log('🔍 成果物データ取得結果:', {
+          projectId: currentProject.id,
+          deliverablesCount: deliverablesData?.length || 0,
+          deliverablesData: deliverablesData,
+          error: deliverablesError
+        });
+
         // 重複成果物を除去
         const uniqueDeliverables = deliverablesData?.reduce((acc: Deliverable[], deliverable: Deliverable) => {
           const existingDeliverable = acc.find(d => d.id === deliverable.id);
@@ -148,6 +163,12 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
         }, []) || [];
 
         setDeliverables(uniqueDeliverables);
+
+        // タスクと成果物が存在しない場合、手動で作成
+        if ((!uniqueTasks || uniqueTasks.length === 0) && (!uniqueDeliverables || uniqueDeliverables.length === 0)) {
+          console.log('⚠️ タスクと成果物が存在しません。手動で作成します...');
+          await createMissingTasksAndDeliverables(currentProject.id);
+        }
 
       } catch (error) {
         console.error('プロジェクトデータ取得エラー:', error);
@@ -664,6 +685,22 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const createMissingTasksAndDeliverables = async (projectId: string) => {
+    const phases = await supabase
+      .from('phases')
+      .select('id, name')
+      .eq('project_id', projectId);
+
+    if (phases.error) {
+      console.error('プロジェクトのフェーズを取得できませんでした:', phases.error);
+      return;
+    }
+
+    for (const phase of phases.data || []) {
+      await createPhaseData(phase);
+    }
+  };
+
   const value = {
     phases,
     tasks,
@@ -673,6 +710,7 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
     createInitialPhases,
     updateTask,
     updateDeliverable,
+    createMissingTasksAndDeliverables,
   };
 
   return <ProjectDataContext.Provider value={value}>{children}</ProjectDataContext.Provider>;
