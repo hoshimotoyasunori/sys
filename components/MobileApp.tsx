@@ -1111,7 +1111,7 @@ function MobileSettings() {
 }
 
 // 統一されたモーダルコンポーネント（アニメーション付き）
-function MobileUnifiedModal({ isOpen, onClose }) {
+function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
   const [activeSection, setActiveSection] = useState('main');
   const [notification, setNotification] = useState<Notification | null>(null);
   
@@ -1142,9 +1142,13 @@ function MobileUnifiedModal({ isOpen, onClose }) {
   const confirmDeleteProject = async () => {
     if (currentProject && window.confirm(`プロジェクト「${currentProject.name}」を削除しますか？\nこの操作は取り消せません。`)) {
       try {
-        await deleteProject(currentProject.id);
-        showNotification('プロジェクトを削除しました', 'success');
-        onClose();
+        const result = await deleteProject(currentProject.id);
+        if (result.error) {
+          showNotification(result.error.message, 'error');
+        } else {
+          showNotification('プロジェクトを削除しました', 'success');
+          onClose();
+        }
       } catch (error) {
         console.error('プロジェクト削除エラー:', error);
         showNotification('プロジェクトの削除に失敗しました', 'error');
@@ -1199,6 +1203,11 @@ function MobileUnifiedModal({ isOpen, onClose }) {
   const handleImportData = () => {
     // プレースホルダー実装
     showNotification('インポート機能は今後実装予定です', 'info');
+  };
+
+  const handleNavigateToView = (view) => {
+    onNavigateToView(view);
+    onClose();
   };
 
   const menuItems = [
@@ -1292,17 +1301,26 @@ function MobileUnifiedModal({ isOpen, onClose }) {
 
               {/* プロジェクト管理ボタン */}
               <div className="space-y-3">
-                <button className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200">
+                <button 
+                  onClick={() => handleNavigateToView('project-members')}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
+                >
                   <Users className="h-5 w-5 text-blue-600" />
                   <span className="font-medium">メンバー一覧</span>
                 </button>
                 
-                <button className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200">
+                <button 
+                  onClick={() => handleNavigateToView('create-project')}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200"
+                >
                   <Plus className="h-5 w-5 text-green-600" />
                   <span className="font-medium">プロジェクト作成</span>
                 </button>
                 
-                <button className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50 transition-all duration-200">
+                <button 
+                  onClick={() => handleNavigateToView('switch-project')}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50 transition-all duration-200"
+                >
                   <Settings className="h-5 w-5 text-yellow-600" />
                   <span className="font-medium">プロジェクト切り替え</span>
                 </button>
@@ -1325,7 +1343,10 @@ function MobileUnifiedModal({ isOpen, onClose }) {
                 <h3 className="text-lg font-bold text-gray-900 mb-2">テンプレート</h3>
                 <p className="text-gray-600">システム設計に必要なテンプレートをダウンロードできます</p>
               </div>
-              <button className="w-full p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200">
+              <button 
+                onClick={() => handleNavigateToView('templates')}
+                className="w-full p-4 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors duration-200"
+              >
                 テンプレート一覧を表示
               </button>
             </div>
@@ -1338,7 +1359,10 @@ function MobileUnifiedModal({ isOpen, onClose }) {
                 <h3 className="text-lg font-bold text-gray-900 mb-2">基本ガイド</h3>
                 <p className="text-gray-600">システム設計の基本手順を確認できます</p>
               </div>
-              <button className="w-full p-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors duration-200">
+              <button 
+                onClick={() => handleNavigateToView('guide')}
+                className="w-full p-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors duration-200"
+              >
                 ガイドを表示
               </button>
             </div>
@@ -1351,7 +1375,10 @@ function MobileUnifiedModal({ isOpen, onClose }) {
                 <h3 className="text-lg font-bold text-gray-900 mb-2">ドキュメント管理</h3>
                 <p className="text-gray-600">プロジェクトのドキュメントを管理できます</p>
               </div>
-              <button className="w-full p-4 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors duration-200">
+              <button 
+                onClick={() => handleNavigateToView('documents')}
+                className="w-full p-4 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors duration-200"
+              >
                 ドキュメント一覧を表示
               </button>
             </div>
@@ -1364,7 +1391,10 @@ function MobileUnifiedModal({ isOpen, onClose }) {
                 <h3 className="text-lg font-bold text-gray-900 mb-2">成果物チェック</h3>
                 <p className="text-gray-600">全フェーズの成果物を一覧で確認できます</p>
               </div>
-              <button className="w-full p-4 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors duration-200">
+              <button 
+                onClick={() => handleNavigateToView('deliverables-checklist')}
+                className="w-full p-4 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors duration-200"
+              >
                 成果物チェックリストを表示
               </button>
             </div>
@@ -1509,6 +1539,12 @@ export default function MobileApp() {
     }
   };
 
+  // モーダルからの画面遷移ハンドラー
+  const handleNavigateToView = (view) => {
+    setActiveView(view);
+    setUnifiedModalOpen(false);
+  };
+
   // ローディング状態
   if (loading) {
     return (
@@ -1594,6 +1630,27 @@ export default function MobileApp() {
             onCheck={handleDeliverableCheck} 
           />
         )}
+        {activeView === "project-members" && (
+          <div className="text-center py-8">
+            <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-gray-900 mb-2">プロジェクトメンバー</h3>
+            <p className="text-gray-600">メンバー管理機能は今後実装予定です</p>
+          </div>
+        )}
+        {activeView === "create-project" && (
+          <div className="text-center py-8">
+            <Plus className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-gray-900 mb-2">プロジェクト作成</h3>
+            <p className="text-gray-600">プロジェクト作成機能は今後実装予定です</p>
+          </div>
+        )}
+        {activeView === "switch-project" && (
+          <div className="text-center py-8">
+            <Settings className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-gray-900 mb-2">プロジェクト切り替え</h3>
+            <p className="text-gray-600">プロジェクト切り替え機能は今後実装予定です</p>
+          </div>
+        )}
       </main>
 
       {/* フッター（ボトムナビゲーション） */}
@@ -1620,6 +1677,7 @@ export default function MobileApp() {
       <MobileUnifiedModal
         isOpen={unifiedModalOpen}
         onClose={() => setUnifiedModalOpen(false)}
+        onNavigateToView={handleNavigateToView}
       />
     </div>
   );
