@@ -1473,7 +1473,7 @@ function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
 }
 
 export default function MobileApp() {
-  const [activePhase, setActivePhase] = useState<string>('');
+  const [activePhase, setActivePhase] = useState<string | null>(null);
   const [unifiedModalOpen, setUnifiedModalOpen] = useState(false);
   const [activeView, setActiveView] = useState('phase'); // 'phase' | 'templates' | 'guide' | 'documents' | 'settings'
   const [notification, setNotification] = useState<Notification | null>(null);
@@ -1492,14 +1492,13 @@ export default function MobileApp() {
   // activePhaseの初期値を設定（より安全な処理）
   useEffect(() => {
     if (phasesWithData.length > 0) {
-      // 現在のactivePhaseが有効でない場合、または空の場合のみ設定
-      const isValidPhase = activePhase && phasesWithData.find(phase => phase.id === activePhase);
-      if (!isValidPhase) {
+      // activePhaseがnullの場合、または現在のactivePhaseが有効でない場合のみ設定
+      if (!activePhase || !phasesWithData.find(phase => phase.id === activePhase)) {
         setActivePhase(phasesWithData[0].id);
       }
     } else {
       // フェーズデータが空の場合はactivePhaseをリセット
-      setActivePhase('');
+      setActivePhase(null);
     }
   }, [phasesWithData]); // activePhaseを依存配列から削除
 
