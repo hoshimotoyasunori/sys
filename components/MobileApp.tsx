@@ -1492,7 +1492,7 @@ export default function MobileApp() {
   // activePhaseの初期値を設定（より安全な処理）
   useEffect(() => {
     if (phasesWithData.length > 0) {
-      // 現在のactivePhaseが有効でない場合、または空の場合
+      // 現在のactivePhaseが有効でない場合、または空の場合のみ設定
       const isValidPhase = activePhase && phasesWithData.find(phase => phase.id === activePhase);
       if (!isValidPhase) {
         setActivePhase(phasesWithData[0].id);
@@ -1501,7 +1501,7 @@ export default function MobileApp() {
       // フェーズデータが空の場合はactivePhaseをリセット
       setActivePhase('');
     }
-  }, [phasesWithData, activePhase]);
+  }, [phasesWithData]); // activePhaseを依存配列から削除
 
   // currentPhaseを安全に取得
   const currentPhase = activePhase ? phasesWithData.find(phase => phase.id === activePhase) : null;
