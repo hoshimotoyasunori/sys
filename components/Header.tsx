@@ -110,7 +110,6 @@ export function Header({
   };
 
   const handleProjectSelect = (project: any) => {
-    console.log('プロジェクト切り替え:', project);
     selectProject(project);
   };
 
@@ -308,7 +307,6 @@ export function Header({
         onCreateProject={async (name: string, description: string) => {
           const { error } = await createProject(name, description);
           if (!error) {
-            console.log('新規プロジェクトを作成しました');
             // プロジェクトが作成され、自動的に選択される
             // ダイアログは自動的に閉じられる
           }

@@ -145,111 +145,61 @@ function ProjectProvider({ children }: { children: React.ReactNode }) {
 
   const deleteProject = async (projectId: string) => {
     if (!user) {
-      return { error: new Error('User not authenticated') };
+      return { error: new Error('ユーザーが認証されていません') };
     }
 
     try {
-      console.log('Attempting to delete project:', projectId);
-      console.log('Current user:', user.id);
-      
-      // まずプロジェクトの存在と権限を確認
-      const { data: projectData, error: projectError } = await supabase
+      // プロジェクトの存在確認とオーナー権限チェック
+      const { data: project, error: fetchError } = await supabase
         .from('projects')
-        .select('id, owner_id')
+        .select('*')
         .eq('id', projectId)
         .single();
 
-      if (projectError) {
-        console.error('Error fetching project for deletion:', projectError);
+      if (fetchError) {
         return { error: new Error('プロジェクトが見つかりません') };
       }
 
-      if (!projectData) {
+      if (!project) {
         return { error: new Error('プロジェクトが見つかりません') };
       }
 
-      // オーナーかどうかチェック
-      if (projectData.owner_id !== user.id) {
+      if (project.owner_id !== user.id) {
         return { error: new Error('プロジェクトを削除する権限がありません') };
       }
 
-      console.log('Project found, owner confirmed. Proceeding with deletion...');
-
-      // 関連データを削除（CASCADEが効かない場合のため）
-      // 1. プロジェクトメンバーを削除
-      const { error: membersError } = await supabase
-        .from('project_members')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (membersError) {
-        console.warn('Error deleting project members:', membersError);
-      }
-
-      // 2. プロジェクト招待を削除
-      const { error: invitationsError } = await supabase
-        .from('project_invitations')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (invitationsError) {
-        console.warn('Error deleting project invitations:', invitationsError);
-      }
-
-      // 3. タスクを削除
-      const { error: tasksError } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (tasksError) {
-        console.warn('Error deleting project tasks:', tasksError);
-      }
-
-      // 4. 成果物を削除
-      const { error: deliverablesError } = await supabase
-        .from('deliverables')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (deliverablesError) {
-        console.warn('Error deleting project deliverables:', deliverablesError);
-      }
-
-      // 5. フェーズを削除
-      const { error: phasesError } = await supabase
-        .from('phases')
-        .delete()
-        .eq('project_id', projectId);
-
-      if (phasesError) {
-        console.warn('Error deleting project phases:', phasesError);
-      }
-
-      // 6. 最後にプロジェクトを削除
+      // プロジェクトの削除
       const { error: deleteError } = await supabase
         .from('projects')
         .delete()
         .eq('id', projectId);
 
       if (deleteError) {
-        console.error('Error deleting project:', deleteError);
         return { error: new Error('プロジェクトの削除に失敗しました') };
       }
 
-      console.log('Project deleted successfully');
-
-      // 削除されたプロジェクトが現在のプロジェクトの場合、currentProjectをクリア
+      // 現在のプロジェクトが削除された場合、他のプロジェクトを選択
       if (currentProject?.id === projectId) {
-        setCurrentProject(null);
+        const { data: otherProjects } = await supabase
+          .from('projects')
+          .select('*')
+          .eq('owner_id', user.id)
+          .neq('id', projectId)
+          .limit(1);
+
+        if (otherProjects && otherProjects.length > 0) {
+          setCurrentProject(otherProjects[0]);
+        } else {
+          setCurrentProject(null);
+        }
       }
 
-      // プロジェクトリストから削除
-      setProjects(prev => prev.filter(project => project.id !== projectId));
-
+      // プロジェクトリストを更新
+      await fetchProjects();
+      
       return { error: null };
     } catch (error) {
-      console.error('Error deleting project:', error);
+      console.error('プロジェクト削除エラー:', error);
       return { error };
     }
   };

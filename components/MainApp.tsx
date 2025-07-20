@@ -413,38 +413,21 @@ export const MainApp: React.FC = () => {
   // データを組み合わせて表示用のフェーズデータを作成
   const phasesWithData = phases.map(phase => ({
     ...phase,
-    title: phase.name, // データベースのnameフィールドをtitleとして使用
+    title: phase.name,
     tasks: tasks.filter(task => task.phase_id === phase.id),
     deliverables: deliverables.filter(deliverable => deliverable.phase_id === phase.id),
-    questions: [], // 現在は空配列
-    advice: [] // 現在は空配列
   }));
 
-  console.log('MainApp - phasesWithData:', phasesWithData);
-  console.log('MainApp - currentProject:', currentProject);
-  console.log('MainApp - phases:', phases);
-  console.log('MainApp - tasks:', tasks);
-  console.log('MainApp - deliverables:', deliverables);
-
-  // activePhaseの初期値を設定（phasesWithDataが空でない場合の最初のフェーズのID）
-  const [activePhase, setActivePhase] = useState(() => {
-    return phasesWithData.length > 0 ? phasesWithData[0].id : '';
-  });
-
-  // phasesWithDataが変更されたときにactivePhaseを更新
+  // activePhaseの初期値を設定
   useEffect(() => {
-    console.log('MainApp - useEffect triggered, phasesWithData.length:', phasesWithData.length);
-    console.log('MainApp - current activePhase:', activePhase);
-    console.log('MainApp - phasesWithData IDs:', phasesWithData.map(p => p.id));
-    if (phasesWithData.length > 0 && !phasesWithData.find(phase => phase.id === activePhase)) {
-      console.log('MainApp - Setting new activePhase to:', phasesWithData[0].id);
+    if (phasesWithData.length > 0 && !activePhase) {
+      setActivePhase(phasesWithData[0].id);
+    } else if (phasesWithData.length > 0 && !phasesWithData.find(phase => phase.id === activePhase)) {
       setActivePhase(phasesWithData[0].id);
     }
   }, [phasesWithData, activePhase]);
 
   const currentPhase = phasesWithData.find(phase => phase.id === activePhase);
-  console.log('MainApp - currentPhase:', currentPhase);
-  console.log('MainApp - activePhase:', activePhase);
 
   const totalTasks = phasesWithData.reduce((acc, phase) => acc + phase.tasks.length, 0);
   const completedTasks = phasesWithData.reduce((acc, phase) => 
@@ -488,6 +471,10 @@ export const MainApp: React.FC = () => {
       </div>
     );
   }
+
+  const handlePhaseClick = (phase: any) => {
+    setActivePhase(phase.id);
+  };
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
@@ -573,7 +560,6 @@ export const MainApp: React.FC = () => {
                     <button
                       key={phase.id}
                       onClick={() => {
-                        console.log('Phase clicked:', phase.title, 'ID:', phase.id);
                         setCurrentView('phases');
                         setActivePhase(phase.id);
                       }}

@@ -67,133 +67,100 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
   const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchProjectData = async () => {
+  useEffect(() => {
     if (!currentProject) {
       setPhases([]);
       setTasks([]);
       setDeliverables([]);
+      setLoading(false);
       return;
     }
 
-    console.log('MainApp - currentProject:', currentProject);
-    console.log('Fetching project data for project:', currentProject.id);
     setLoading(true);
-    try {
-      // フェーズを取得
-      let { data: phasesData, error: phasesError } = await supabase
-        .from('phases')
-        .select('*')
-        .eq('project_id', currentProject.id)
-        .order('order_index', { ascending: true });
 
-      if (phasesError) throw phasesError;
+    const fetchProjectData = async () => {
+      try {
+        // フェーズデータを取得
+        const { data: phasesData, error: phasesError } = await supabase
+          .from('phases')
+          .select('*')
+          .eq('project_id', currentProject.id)
+          .order('order_index', { ascending: true });
 
-      console.log('MainApp - phases:', phasesData);
-      setPhases(phasesData || []);
+        if (phasesError) throw phasesError;
 
-      // フェーズが存在しない場合は初期データを作成
-      if (!phasesData || phasesData.length === 0) {
-        console.log('No phases found, creating initial phases...');
-        const { error: createError } = await createInitialPhases(currentProject.id);
-        if (createError) {
-          console.error('Error creating initial phases:', createError);
-        } else {
-          // 初期データ作成後に再取得
-          const { data: newPhasesData, error: newPhasesError } = await supabase
+        // フェーズが存在しない場合は初期フェーズを作成
+        if (!phasesData || phasesData.length === 0) {
+          const initialPhases = [
+            { name: '要件定義', order_index: 1 },
+            { name: '基本設計', order_index: 2 },
+            { name: '外部設計', order_index: 3 },
+            { name: '開発準備', order_index: 4 }
+          ];
+
+          const { data: newPhasesData, error: createPhasesError } = await supabase
             .from('phases')
-            .select('*')
-            .eq('project_id', currentProject.id)
-            .order('order_index', { ascending: true });
+            .insert(initialPhases.map(phase => ({ ...phase, project_id: currentProject.id })))
+            .select();
 
-          if (newPhasesError) throw newPhasesError;
-          console.log('Fetched new phases:', newPhasesData);
-          phasesData = newPhasesData || [];
+          if (createPhasesError) throw createPhasesError;
+          setPhases(newPhasesData || []);
+        } else {
           setPhases(phasesData);
         }
+
+        // タスクデータを取得
+        const { data: tasksData, error: tasksError } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('project_id', currentProject.id)
+          .order('created_at', { ascending: true });
+
+        if (tasksError) throw tasksError;
+
+        // 重複タスクを除去
+        const uniqueTasks = tasksData?.reduce((acc: Task[], task: Task) => {
+          const existingTask = acc.find(t => t.id === task.id);
+          if (!existingTask) {
+            acc.push(task);
+          }
+          return acc;
+        }, []) || [];
+
+        setTasks(uniqueTasks);
+
+        // 成果物データを取得
+        const { data: deliverablesData, error: deliverablesError } = await supabase
+          .from('deliverables')
+          .select('*')
+          .eq('project_id', currentProject.id)
+          .order('created_at', { ascending: true });
+
+        if (deliverablesError) throw deliverablesError;
+
+        // 重複成果物を除去
+        const uniqueDeliverables = deliverablesData?.reduce((acc: Deliverable[], deliverable: Deliverable) => {
+          const existingDeliverable = acc.find(d => d.id === deliverable.id);
+          if (!existingDeliverable) {
+            acc.push(deliverable);
+          }
+          return acc;
+        }, []) || [];
+
+        setDeliverables(uniqueDeliverables);
+
+      } catch (error) {
+        console.error('プロジェクトデータ取得エラー:', error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // タスクを取得
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .in('phase_id', phasesData?.map(p => p.id) || [])
-        .order('order_index', { ascending: true });
-
-      if (tasksError) throw tasksError;
-
-      console.log('MainApp - tasks:', tasksData);
-      
-      // タスクデータをフロントエンドの期待する形式に変換
-      const transformedTasks = (tasksData || []).map(task => ({
-        ...task,
-        completed: task.status === 'completed',
-        priority: task.priority || 'medium'
-      }));
-      
-      // 重複を除去（IDでユニークにする）
-      const uniqueTasks = transformedTasks.reduce((acc: Task[], task) => {
-        const existingTask = acc.find(t => t.id === task.id);
-        if (!existingTask) {
-          acc.push(task);
-        } else {
-          console.log('Duplicate task found and removed:', task.title, task.id);
-        }
-        return acc;
-      }, []);
-      
-      // order_indexでソートして順番を固定
-      uniqueTasks.sort((a, b) => a.order_index - b.order_index);
-      
-      console.log('MainApp - unique tasks:', uniqueTasks);
-      console.log('MainApp - tasks count:', tasksData?.length || 0, '-> unique:', uniqueTasks.length);
-      setTasks(uniqueTasks);
-
-      // 成果物を取得
-      const { data: deliverablesData, error: deliverablesError } = await supabase
-        .from('deliverables')
-        .select('*')
-        .in('phase_id', phasesData?.map(p => p.id) || [])
-        .order('order_index', { ascending: true });
-
-      if (deliverablesError) throw deliverablesError;
-
-      console.log('MainApp - deliverables:', deliverablesData);
-      
-      // 成果物データをフロントエンドの期待する形式に変換
-      const transformedDeliverables = (deliverablesData || []).map(deliverable => ({
-        ...deliverable,
-        title: deliverable.name, // nameフィールドをtitleとして使用
-        status: deliverable.status === 'pending' ? 'not-started' : deliverable.status
-      }));
-      
-      // 重複を除去（IDでユニークにする）
-      const uniqueDeliverables = transformedDeliverables.reduce((acc: Deliverable[], deliverable) => {
-        const existingDeliverable = acc.find(d => d.id === deliverable.id);
-        if (!existingDeliverable) {
-          acc.push(deliverable);
-        } else {
-          console.log('Duplicate deliverable found and removed:', deliverable.name, deliverable.id);
-        }
-        return acc;
-      }, []);
-      
-      // order_indexでソートして順番を固定
-      uniqueDeliverables.sort((a, b) => a.order_index - b.order_index);
-      
-      console.log('MainApp - unique deliverables:', uniqueDeliverables);
-      console.log('MainApp - deliverables count:', deliverablesData?.length || 0, '-> unique:', uniqueDeliverables.length);
-      setDeliverables(uniqueDeliverables);
-    } catch (error) {
-      console.error('Error fetching project data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    fetchProjectData();
+  }, [currentProject]);
 
   useEffect(() => {
     if (currentProject) {
-      fetchProjectData();
-      
       // リアルタイム同期の設定
       const tasksChannel = supabase
         .channel('tasks-changes')
@@ -203,13 +170,12 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
             event: '*',
             schema: 'public',
             table: 'tasks',
-            filter: `phase_id=in.(${phases.map(p => p.id).join(',')})`
+            filter: `project_id=eq.${currentProject.id}`
           },
           (payload) => {
-            console.log('Tasks realtime update:', payload);
             if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-              // データを再取得（重複除去機能付き）
-              fetchProjectData();
+              // データを再取得
+              refreshData();
             }
           }
         )
@@ -223,13 +189,12 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
             event: '*',
             schema: 'public',
             table: 'deliverables',
-            filter: `phase_id=in.(${phases.map(p => p.id).join(',')})`
+            filter: `project_id=eq.${currentProject.id}`
           },
           (payload) => {
-            console.log('Deliverables realtime update:', payload);
             if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT' || payload.eventType === 'DELETE') {
-              // データを再取得（重複除去機能付き）
-              fetchProjectData();
+              // データを再取得
+              refreshData();
             }
           }
         )
@@ -250,16 +215,12 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
 
   const updateTask = async (taskId: string, updates: Partial<Task>) => {
     try {
-      console.log('Updating task:', taskId, 'with updates:', updates);
-      
       const { error } = await supabase
         .from('tasks')
         .update(updates)
         .eq('id', taskId);
 
       if (error) throw error;
-
-      console.log('Task updated successfully');
 
       // ローカル状態を即座に更新（UIの応答性向上）
       setTasks(prev => {
@@ -272,7 +233,7 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
 
       return { error: null };
     } catch (error) {
-      console.error('Error updating task:', error);
+      console.error('タスク更新エラー:', error);
       return { error };
     }
   };
@@ -641,7 +602,66 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const refreshData = async () => {
-    await fetchProjectData();
+    if (!currentProject) return;
+
+    try {
+      setLoading(true);
+
+      // フェーズデータを取得
+      const { data: phasesData, error: phasesError } = await supabase
+        .from('phases')
+        .select('*')
+        .eq('project_id', currentProject.id)
+        .order('order_index', { ascending: true });
+
+      if (phasesError) throw phasesError;
+      setPhases(phasesData || []);
+
+      // タスクデータを取得
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('project_id', currentProject.id)
+        .order('created_at', { ascending: true });
+
+      if (tasksError) throw tasksError;
+
+      // 重複タスクを除去
+      const uniqueTasks = tasksData?.reduce((acc: Task[], task: Task) => {
+        const existingTask = acc.find(t => t.id === task.id);
+        if (!existingTask) {
+          acc.push(task);
+        }
+        return acc;
+      }, []) || [];
+
+      setTasks(uniqueTasks);
+
+      // 成果物データを取得
+      const { data: deliverablesData, error: deliverablesError } = await supabase
+        .from('deliverables')
+        .select('*')
+        .eq('project_id', currentProject.id)
+        .order('created_at', { ascending: true });
+
+      if (deliverablesError) throw deliverablesError;
+
+      // 重複成果物を除去
+      const uniqueDeliverables = deliverablesData?.reduce((acc: Deliverable[], deliverable: Deliverable) => {
+        const existingDeliverable = acc.find(d => d.id === deliverable.id);
+        if (!existingDeliverable) {
+          acc.push(deliverable);
+        }
+        return acc;
+      }, []) || [];
+
+      setDeliverables(uniqueDeliverables);
+
+    } catch (error) {
+      console.error('データ更新エラー:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const value = {
