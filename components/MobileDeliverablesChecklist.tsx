@@ -26,6 +26,7 @@ export function MobileDeliverablesChecklist({ onBack }: MobileDeliverablesCheckl
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedDeliverable, setSelectedDeliverable] = useState<Deliverable | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [hasAttemptedAutoCreate, setHasAttemptedAutoCreate] = useState(false);
 
   // コンテキストからデータを取得
   const { currentProject } = useProject();
@@ -42,6 +43,15 @@ export function MobileDeliverablesChecklist({ onBack }: MobileDeliverablesCheckl
       deliverables: deliverables
     });
   }, [currentProject, phases, deliverables, loading]);
+
+  // 成果物データが存在しない場合の自動作成（一度だけ実行）
+  useEffect(() => {
+    if (!loading && currentProject && phases.length > 0 && deliverables.length === 0 && !hasAttemptedAutoCreate) {
+      console.log('⚠️ 成果物データが存在しません。自動作成を試行します...');
+      setHasAttemptedAutoCreate(true);
+      handleCreateData();
+    }
+  }, [loading, currentProject, phases.length, deliverables.length, hasAttemptedAutoCreate]);
 
   // フェーズごとに成果物をグループ化
   const deliverablesByPhase = phases.map(phase => ({
@@ -338,24 +348,40 @@ export function MobileDeliverablesChecklist({ onBack }: MobileDeliverablesCheckl
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setSelectedDeliverable(deliverable)}
-                              className="p-2 text-gray-400 hover:text-gray-600"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            <select
-                              value={deliverable.status}
-                              onChange={(e) => handleStatusUpdate(deliverable.id, e.target.value)}
-                              className="text-xs border border-gray-300 rounded px-2 py-1"
-                            >
-                              <option value="pending">未着手</option>
-                              <option value="in-progress">進行中</option>
-                              <option value="completed">完了</option>
-                            </select>
+                          <div className="flex flex-col items-end gap-2">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setSelectedDeliverable(deliverable)}
+                                className="p-2 text-gray-400 hover:text-gray-600"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                            </div>
+                            
+                            {/* ステータス変更プルダウン */}
+                            <div className="flex flex-col items-end gap-1">
+                              <label className="text-xs text-gray-500 font-medium">ステータス</label>
+                              <select
+                                value={deliverable.status}
+                                onChange={(e) => handleStatusUpdate(deliverable.id, e.target.value)}
+                                className="text-xs border border-gray-300 rounded px-2 py-1 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[80px]"
+                              >
+                                <option value="pending">未着手</option>
+                                <option value="in-progress">進行中</option>
+                                <option value="completed">完了</option>
+                              </select>
+                            </div>
                           </div>
                         </div>
+                        
+                        {/* デバッグ情報（開発時のみ表示） */}
+                        {process.env.NODE_ENV === 'development' && (
+                          <div className="mt-2 pt-2 border-t border-gray-100">
+                            <p className="text-xs text-gray-400">
+                              ID: {deliverable.id} | ステータス: {deliverable.status} | タイプ: {deliverable.type}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -367,7 +393,7 @@ export function MobileDeliverablesChecklist({ onBack }: MobileDeliverablesCheckl
               <div className="text-center py-8 text-gray-500">
                 <CheckCircle className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                 <p>成果物が見つかりません</p>
-                {deliverables.length === 0 && (
+                {deliverables.length === 0 ? (
                   <div className="mt-4">
                     <p className="text-xs mb-2">成果物データが存在しません</p>
                     <button
@@ -387,6 +413,15 @@ export function MobileDeliverablesChecklist({ onBack }: MobileDeliverablesCheckl
                         </>
                       )}
                     </button>
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    <p className="text-xs mb-2">フィルター条件に一致する成果物がありません</p>
+                    <p className="text-xs text-gray-400">
+                      検索条件: {searchTerm ? `"${searchTerm}"` : 'なし'} | 
+                      タイプ: {selectedType === 'all' ? '全て' : getTypeLabel(selectedType)} | 
+                      ステータス: {selectedStatus === 'all' ? '全て' : getStatusLabel(selectedStatus)}
+                    </p>
                   </div>
                 )}
               </div>
