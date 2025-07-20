@@ -1,6 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
-import { Download, FileText, Target, Layout, Settings, Code, Search, MessageCircle, Layers } from 'lucide-react';
+import { Download, FileText, Target, Layout, Settings, Code, Search, MessageCircle, Layers, Users, Plus, Trash2, LogOut, User, AlertCircle, CheckCircle2, Upload } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { useProject } from '../contexts/ProjectContext';
+import { useProjectData } from '../contexts/ProjectDataContext';
+import { ProjectMembersDialog } from './ProjectMembersDialog';
+import { CreateProjectDialog } from './CreateProjectDialog';
+import { DeleteProjectDialog } from './DeleteProjectDialog';
+import { ProjectSwitchDialog } from './ProjectSwitchDialog';
+
+// 通知の型定義
+interface Notification {
+  message: string;
+  type: 'success' | 'error' | 'info';
+}
+
+interface MobileNotificationProps {
+  message: string;
+  type: 'success' | 'error' | 'info';
+  onClose: () => void;
+}
 
 const phases = [
   { id: 'requirements-definition', label: '要件定義', icon: <span>🔍</span> },
@@ -9,37 +28,96 @@ const phases = [
   { id: 'development-prep', label: '開発準備', icon: <span>⚙️</span> },
 ];
 
-// 進捗サマリー
+// 進捗表示コンポーネント（改善版）
 function MobilePhaseOverview({ phase }) {
-  const completedTasks = phase.tasks.filter(task => task.status === 'completed').length;
   const totalTasks = phase.tasks.length;
-  const completedDeliverables = phase.deliverables.filter(d => d.status === 'completed').length;
+  const completedTasks = phase.tasks.filter(task => task.status === 'completed').length;
   const totalDeliverables = phase.deliverables.length;
+  const completedDeliverables = phase.deliverables.filter(deliverable => deliverable.status === 'completed').length;
+  
+  const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+  const deliverableProgress = totalDeliverables > 0 ? (completedDeliverables / totalDeliverables) * 100 : 0;
+  const overallProgress = totalTasks + totalDeliverables > 0 ? 
+    ((completedTasks + completedDeliverables) / (totalTasks + totalDeliverables)) * 100 : 0;
+
   return (
-    <div className="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-100">
-      <div className="flex justify-between items-center mb-2">
-        <div className="flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-blue-600" />
-          <span className="font-semibold text-gray-800">進捗サマリー</span>
+    <div className="mb-6">
+      <div className="bg-white rounded-xl p-4 shadow-sm">
+        <h2 className="text-lg font-bold mb-4">{phase.title}</h2>
+        
+        {/* 全体進捗 */}
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-gray-700">全体進捗</span>
+            <span className="text-sm font-bold text-blue-600">{Math.round(overallProgress)}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3">
+            <div 
+              className="bg-blue-600 h-3 rounded-full transition-all duration-300" 
+              style={{ width: `${overallProgress}%` }}
+            ></div>
+          </div>
         </div>
-        <span className="text-xs text-gray-500">{phase.title}</span>
-      </div>
-      <div className="flex justify-between text-sm">
-        <div>
-          <div className="text-gray-700">タスク</div>
-          <div className="font-bold">{completedTasks}/{totalTasks} 完了</div>
+
+        {/* 詳細進捗 */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* タスク進捗 */}
+          <div className="bg-blue-50 rounded-lg p-3">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-medium text-blue-700">タスク</span>
+              <span className="text-xs font-bold text-blue-600">{completedTasks}/{totalTasks}</span>
+            </div>
+            <div className="w-full bg-blue-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${taskProgress}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* 成果物進捗 */}
+          <div className="bg-green-50 rounded-lg p-3">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs font-medium text-green-700">成果物</span>
+              <span className="text-xs font-bold text-green-600">{completedDeliverables}/{totalDeliverables}</span>
+            </div>
+            <div className="w-full bg-green-200 rounded-full h-2">
+              <div 
+                className="bg-green-600 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${deliverableProgress}%` }}
+              ></div>
+            </div>
+          </div>
         </div>
-        <div>
-          <div className="text-gray-700">成果物</div>
-          <div className="font-bold">{completedDeliverables}/{totalDeliverables} 完了</div>
+
+        {/* 統計情報 */}
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-3 gap-4 text-center text-xs">
+            <div>
+              <div className="font-bold text-gray-900">{totalTasks}</div>
+              <div className="text-gray-500">タスク</div>
+            </div>
+            <div>
+              <div className="font-bold text-gray-900">{totalDeliverables}</div>
+              <div className="text-gray-500">成果物</div>
+            </div>
+            <div>
+              <div className="font-bold text-gray-900">{Math.round(overallProgress)}%</div>
+              <div className="text-gray-500">完了率</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-// タスク一覧
+// 検索・フィルタリング機能付きタスク一覧
 function MobileTaskManager({ phase, onTaskUpdate }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-700';
@@ -48,6 +126,7 @@ function MobileTaskManager({ phase, onTaskUpdate }) {
       default: return 'bg-gray-100 text-gray-600';
     }
   };
+  
   const getPriorityLabel = (priority) => {
     switch (priority) {
       case 'high': return '高';
@@ -56,75 +135,221 @@ function MobileTaskManager({ phase, onTaskUpdate }) {
       default: return '低';
     }
   };
+
+  // フィルタリングされたタスク
+  const filteredTasks = phase.tasks.filter(task => {
+    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = statusFilter === 'all' || 
+                         (statusFilter === 'completed' && task.status === 'completed') ||
+                         (statusFilter === 'pending' && task.status !== 'completed');
+    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
+    
+    return matchesSearch && matchesStatus && matchesPriority;
+  });
+
   return (
     <div className="mb-6">
-      <h2 className="text-base font-bold mb-2">主要タスク</h2>
+      <h2 className="text-base font-bold mb-3">主要タスク</h2>
+      
+      {/* 検索・フィルター */}
+      <div className="space-y-3 mb-4">
+        {/* 検索バー */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="タスクを検索..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* フィルター */}
+        <div className="flex gap-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="all">すべてのステータス</option>
+            <option value="completed">完了済み</option>
+            <option value="pending">未完了</option>
+          </select>
+          
+          <select
+            value={priorityFilter}
+            onChange={(e) => setPriorityFilter(e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="all">すべての優先度</option>
+            <option value="high">高優先度</option>
+            <option value="medium">中優先度</option>
+            <option value="low">低優先度</option>
+          </select>
+        </div>
+      </div>
+
+      {/* タスク一覧 */}
       <div className="space-y-3">
-        {phase.tasks.map(task => (
-          <div key={task.id} className="flex items-start gap-3 p-3 border rounded-lg bg-white">
-            <input
-              type="checkbox"
-              checked={task.status === 'completed'}
-              onChange={() => onTaskUpdate(task.id, task.status === 'completed' ? 'not-started' : 'completed')}
-              className="mt-1 accent-blue-500"
-            />
-            <div className="flex-1 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className={`text-sm ${task.status === 'completed' ? 'line-through text-gray-400' : ''}`}>{task.title}</span>
-                <span className={`px-2 py-0.5 rounded text-xs font-bold ${getPriorityColor(task.priority)}`}>{getPriorityLabel(task.priority)}</span>
-              </div>
-              <p className={`text-xs text-gray-600 ${task.status === 'completed' ? 'line-through' : ''}`}>{task.description}</p>
-            </div>
+        {filteredTasks.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+            <p>条件に一致するタスクが見つかりません</p>
           </div>
-        ))}
+        ) : (
+          filteredTasks.map(task => (
+            <div key={task.id} className="flex items-start gap-3 p-3 border rounded-lg bg-white">
+              <input
+                type="checkbox"
+                checked={task.status === 'completed'}
+                onChange={() => onTaskUpdate(task.id, task.status === 'completed' ? false : true)}
+                className="mt-1 accent-blue-500"
+              />
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm ${task.status === 'completed' ? 'line-through text-gray-400' : ''}`}>{task.title}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${getPriorityColor(task.priority)}`}>{getPriorityLabel(task.priority)}</span>
+                </div>
+                <p className={`text-xs text-gray-600 ${task.status === 'completed' ? 'line-through' : ''}`}>{task.description}</p>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-// 成果物一覧
+// 検索・フィルタリング機能付き成果物一覧
 function MobileDeliverableTracker({ phase, onStatusUpdate }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-700';
       case 'in-progress': return 'bg-yellow-100 text-yellow-700';
+      case 'pending': return 'bg-gray-100 text-gray-600';
       case 'not-started': return 'bg-gray-100 text-gray-600';
       default: return 'bg-gray-100 text-gray-600';
     }
   };
+  
   const getStatusLabel = (status) => {
     switch (status) {
       case 'completed': return '完了';
       case 'in-progress': return '進行中';
+      case 'pending': return '未着手';
       case 'not-started': return '未着手';
       default: return '未着手';
     }
   };
+
+  const getTypeLabel = (type) => {
+    switch (type) {
+      case 'document': return 'ドキュメント';
+      case 'design': return '設計';
+      case 'code': return 'コード';
+      case 'other': return 'その他';
+      default: return 'その他';
+    }
+  };
+
+  // フィルタリングされた成果物
+  const filteredDeliverables = phase.deliverables.filter(deliverable => {
+    const matchesSearch = (deliverable.name || deliverable.title).toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (deliverable.description && deliverable.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchesStatus = statusFilter === 'all' || deliverable.status === statusFilter;
+    const matchesType = typeFilter === 'all' || deliverable.type === typeFilter;
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
   return (
     <div className="mb-6">
-      <h2 className="text-base font-bold mb-2">主要成果物</h2>
+      <h2 className="text-base font-bold mb-3">主要成果物</h2>
+      
+      {/* 検索・フィルター */}
+      <div className="space-y-3 mb-4">
+        {/* 検索バー */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="成果物を検索..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* フィルター */}
+        <div className="flex gap-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="all">すべてのステータス</option>
+            <option value="completed">完了</option>
+            <option value="in-progress">進行中</option>
+            <option value="pending">未着手</option>
+          </select>
+          
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+          >
+            <option value="all">すべてのタイプ</option>
+            <option value="document">ドキュメント</option>
+            <option value="design">設計</option>
+            <option value="code">コード</option>
+            <option value="other">その他</option>
+          </select>
+        </div>
+      </div>
+
+      {/* 成果物一覧 */}
       <div className="space-y-3">
-        {phase.deliverables.map(deliverable => (
-          <div key={deliverable.id} className="p-3 border rounded-lg bg-white space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{deliverable.title}</span>
-              <span className={`px-2 py-0.5 rounded text-xs font-bold ${getStatusColor(deliverable.status)}`}>{getStatusLabel(deliverable.status)}</span>
-            </div>
-            <p className="text-xs text-gray-600">{deliverable.description}</p>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">ステータス:</span>
-              <select
-                value={deliverable.status}
-                onChange={e => onStatusUpdate(deliverable.id, e.target.value)}
-                className="border rounded px-2 py-1 text-xs"
-              >
-                <option value="not-started">未着手</option>
-                <option value="in-progress">進行中</option>
-                <option value="completed">完了</option>
-              </select>
-            </div>
+        {filteredDeliverables.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+            <p>条件に一致する成果物が見つかりません</p>
           </div>
-        ))}
+        ) : (
+          filteredDeliverables.map(deliverable => (
+            <div key={deliverable.id} className="p-3 border rounded-lg bg-white space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">{deliverable.name || deliverable.title}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded text-xs font-bold ${getStatusColor(deliverable.status)}`}>
+                    {getStatusLabel(deliverable.status)}
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
+                    {getTypeLabel(deliverable.type)}
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-600">{deliverable.description}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">ステータス:</span>
+                <select
+                  value={deliverable.status}
+                  onChange={e => onStatusUpdate(deliverable.id, e.target.value)}
+                  className="border rounded px-2 py-1 text-xs"
+                >
+                  <option value="pending">未着手</option>
+                  <option value="in-progress">進行中</option>
+                  <option value="completed">完了</option>
+                </select>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
@@ -565,113 +790,588 @@ function MobileDocumentManager() {
   );
 }
 
-export default function MobileApp() {
-  const [activePhase, setActivePhase] = useState('requirements-definition');
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeView, setActiveView] = useState('phase'); // 'phase' | 'templates' | 'guide' | 'documents'
-  const [phaseData, setPhaseData] = useState({
-    'requirements-definition': {
-      title: '要件定義',
-      tasks: [
-        { id: 't1', title: '目的・目標の明確化', description: 'プロジェクトの目的や目標を明確にする', status: 'not-started', priority: 'high' },
-        { id: 't2', title: '現状分析', description: '現状業務の分析と課題特定', status: 'not-started', priority: 'high' },
-        { id: 't3', title: 'ヒアリング', description: 'ユーザーヒアリングと要求収集', status: 'not-started', priority: 'medium' },
-      ],
-      deliverables: [
-        { id: 'd1', title: '企画書', description: 'システム開発の目的や期待効果をまとめた文書', status: 'not-started' },
-        { id: 'd2', title: '要件定義書', description: '機能・非機能要件を詳細に記述した文書', status: 'not-started' },
-      ],
-    },
-    'basic-design': {
-      title: '基本設計',
-      tasks: [
-        { id: 't1', title: 'システム構成設計', description: '全体アーキテクチャ設計', status: 'not-started', priority: 'high' },
-        { id: 't2', title: 'DB設計', description: 'データベース論理・物理設計', status: 'not-started', priority: 'high' },
-      ],
-      deliverables: [
-        { id: 'd1', title: '基本設計書', description: 'システム全体像を記述した文書', status: 'not-started' },
-      ],
-    },
-    'external-design': {
-      title: '外部設計',
-      tasks: [
-        { id: 't1', title: 'UI設計', description: '画面レイアウトや操作フロー設計', status: 'not-started', priority: 'medium' },
-        { id: 't2', title: 'UX設計', description: 'ユーザー体験の最適化設計', status: 'not-started', priority: 'medium' },
-      ],
-      deliverables: [
-        { id: 'd1', title: '画面設計書', description: '各画面のレイアウトや要素を記述した文書', status: 'not-started' },
-      ],
-    },
-    'development-prep': {
-      title: '開発準備',
-      tasks: [
-        { id: 't1', title: '環境構築', description: '開発環境のセットアップ', status: 'not-started', priority: 'high' },
-        { id: 't2', title: 'コーディング規約策定', description: 'チーム内のコーディングルール策定', status: 'not-started', priority: 'medium' },
-      ],
-      deliverables: [
-        { id: 'd1', title: '開発環境手順書', description: '開発環境のセットアップ手順書', status: 'not-started' },
-      ],
-    },
-  });
+// 通知コンポーネント
+function MobileNotification({ message, type, onClose }: MobileNotificationProps) {
+  const isSuccess = type === 'success';
+  const isError = type === 'error';
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
 
-  // タスク・成果物の状態更新
-  const handleTaskUpdate = (taskId, status) => {
-    setPhaseData(prev => {
-      const phase = prev[activePhase];
-      const newTasks = phase.tasks.map(t => t.id === taskId ? { ...t, status } : t);
-      return {
-        ...prev,
-        [activePhase]: { ...phase, tasks: newTasks },
-      };
-    });
+  return (
+    <div className={`fixed top-4 left-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+      isSuccess ? 'bg-green-50 border border-green-200' : 
+      isError ? 'bg-red-50 border border-red-200' : 
+      'bg-blue-50 border border-blue-200'
+    }`}>
+      <div className="flex items-center gap-3">
+        {isSuccess && <CheckCircle2 className="h-5 w-5 text-green-600" />}
+        {isError && <AlertCircle className="h-5 w-5 text-red-600" />}
+        <span className={`text-sm font-medium ${
+          isSuccess ? 'text-green-800' : 
+          isError ? 'text-red-800' : 
+          'text-blue-800'
+        }`}>
+          {message}
+        </span>
+        <button onClick={onClose} className="ml-auto text-gray-400 hover:text-gray-600">
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// プロジェクト管理モーダル
+function MobileProjectManagement({ isOpen, onClose }) {
+  const { projects, currentProject, selectProject, deleteProject, createProject } = useProject();
+  const { signOut, user } = useAuth();
+  const [showProjectMembers, setShowProjectMembers] = useState(false);
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [showDeleteProject, setShowDeleteProject] = useState(false);
+  const [showProjectSwitch, setShowProjectSwitch] = useState(false);
+  const [notification, setNotification] = useState<Notification | null>(null);
+
+  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setNotification({ message, type });
   };
-  const handleDeliverableUpdate = (deliverableId, status) => {
-    setPhaseData(prev => {
-      const phase = prev[activePhase];
-      const newDeliverables = phase.deliverables.map(d => d.id === deliverableId ? { ...d, status } : d);
-      return {
-        ...prev,
-        [activePhase]: { ...phase, deliverables: newDeliverables },
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      showNotification('ログアウトしました', 'success');
+      onClose();
+    } catch (error) {
+      showNotification('ログアウトに失敗しました', 'error');
+    }
+  };
+
+  const handleProjectSelect = (project) => {
+    selectProject(project);
+    showNotification(`${project.name}に切り替えました`, 'success');
+    onClose();
+  };
+
+  const confirmDeleteProject = async () => {
+    if (!currentProject) return;
+    
+    try {
+      const { error } = await deleteProject(currentProject.id);
+      if (!error) {
+        showNotification('プロジェクトを削除しました', 'success');
+        onClose();
+      } else {
+        showNotification('プロジェクトの削除に失敗しました', 'error');
+      }
+    } catch (error) {
+      console.error('プロジェクト削除エラー:', error);
+      showNotification('プロジェクトの削除に失敗しました', 'error');
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-end">
+      <div className="bg-white rounded-t-3xl w-full max-h-[80vh] overflow-y-auto">
+        <div className="p-6">
+          {/* ヘッダー */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold">プロジェクト管理</h2>
+            <button onClick={onClose} className="text-2xl">×</button>
+          </div>
+
+          {/* 現在のプロジェクト情報 */}
+          {currentProject && (
+            <div className="bg-blue-50 rounded-xl p-4 mb-6">
+              <h3 className="font-semibold text-blue-900 mb-2">現在のプロジェクト</h3>
+              <div className="text-blue-800">
+                <div className="font-medium">{currentProject.name}</div>
+                {currentProject.description && (
+                  <div className="text-sm mt-1">{currentProject.description}</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* プロジェクト管理オプション */}
+          <div className="space-y-4">
+            <button
+              onClick={() => setShowProjectMembers(true)}
+              className="w-full flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+            >
+              <Users className="h-5 w-5 text-gray-600" />
+              <span className="text-left">参加メンバー一覧</span>
+            </button>
+
+            <button
+              onClick={() => setShowProjectSwitch(true)}
+              className="w-full flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+            >
+              <Layout className="h-5 w-5 text-gray-600" />
+              <span className="text-left">プロジェクトを切り替え</span>
+            </button>
+
+            <button
+              onClick={() => setShowCreateProject(true)}
+              className="w-full flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+            >
+              <Plus className="h-5 w-5 text-gray-600" />
+              <span className="text-left">新規プロジェクト作成</span>
+            </button>
+
+            {currentProject && (
+              <button
+                onClick={() => setShowDeleteProject(true)}
+                className="w-full flex items-center gap-3 p-4 bg-red-50 rounded-xl hover:bg-red-100 transition-colors text-red-700"
+              >
+                <Trash2 className="h-5 w-5" />
+                <span className="text-left">プロジェクトを削除</span>
+              </button>
+            )}
+          </div>
+
+          {/* ユーザー情報 */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl mb-4">
+              <User className="h-5 w-5 text-gray-600" />
+              <div className="text-left">
+                <div className="font-medium text-gray-900">{user?.email}</div>
+                <div className="text-sm text-gray-500">システム設計アシスタント</div>
+              </div>
+            </div>
+
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+            >
+              <LogOut className="h-5 w-5 text-gray-600" />
+              <span className="text-left">ログアウト</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* 通知 */}
+      {notification && (
+        <MobileNotification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
+      {/* ダイアログ類 */}
+      <ProjectMembersDialog
+        isOpen={showProjectMembers}
+        onClose={() => setShowProjectMembers(false)}
+      />
+
+      <ProjectSwitchDialog
+        isOpen={showProjectSwitch}
+        onClose={() => setShowProjectSwitch(false)}
+        projects={projects}
+        currentProject={currentProject}
+        onProjectSelect={handleProjectSelect}
+      />
+
+      <DeleteProjectDialog
+        isOpen={showDeleteProject}
+        onClose={() => setShowDeleteProject(false)}
+        projectName={currentProject?.name || 'プロジェクト'}
+        onConfirm={confirmDeleteProject}
+      />
+
+      <CreateProjectDialog
+        isOpen={showCreateProject}
+        onClose={() => setShowCreateProject(false)}
+        onCreateProject={async (name: string, description: string) => {
+          const { error } = await createProject(name, description);
+          if (!error) {
+            showNotification('プロジェクトを作成しました', 'success');
+            onClose();
+          } else {
+            showNotification('プロジェクトの作成に失敗しました', 'error');
+          }
+          return { error };
+        }}
+      />
+    </div>
+  );
+}
+
+// 設定画面コンポーネント
+function MobileSettings() {
+  const { user, signOut } = useAuth();
+  const { currentProject } = useProject();
+  const { phases, tasks, deliverables } = useProjectData();
+  const [notification, setNotification] = useState<Notification | null>(null);
+
+  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setNotification({ message, type });
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      showNotification('ログアウトしました', 'success');
+    } catch (error) {
+      showNotification('ログアウトに失敗しました', 'error');
+    }
+  };
+
+  const handleExportData = () => {
+    try {
+      if (!currentProject) {
+        showNotification('プロジェクトが選択されていません', 'error');
+        return;
+      }
+
+      // プロジェクトデータを準備
+      const exportData = {
+        project: currentProject,
+        phases: phases,
+        tasks: tasks,
+        deliverables: deliverables,
+        exportDate: new Date().toISOString(),
+        version: '1.0.0'
       };
-    });
+
+      // JSONファイルとしてダウンロード
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${currentProject.name}_export_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showNotification('データをエクスポートしました', 'success');
+    } catch (error) {
+      console.error('エクスポートエラー:', error);
+      showNotification('データのエクスポートに失敗しました', 'error');
+    }
+  };
+
+  const handleBackupData = () => {
+    try {
+      if (!currentProject) {
+        showNotification('プロジェクトが選択されていません', 'error');
+        return;
+      }
+
+      // バックアップデータを準備（エクスポートと同様）
+      const backupData = {
+        project: currentProject,
+        phases: phases,
+        tasks: tasks,
+        deliverables: deliverables,
+        backupDate: new Date().toISOString(),
+        version: '1.0.0',
+        type: 'backup'
+      };
+
+      // JSONファイルとしてダウンロード
+      const dataStr = JSON.stringify(backupData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${currentProject.name}_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      showNotification('データをバックアップしました', 'success');
+    } catch (error) {
+      console.error('バックアップエラー:', error);
+      showNotification('データのバックアップに失敗しました', 'error');
+    }
+  };
+
+  const handleImportData = () => {
+    // 将来的にインポート機能を実装
+    showNotification('データインポート機能は準備中です', 'info');
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* 通知 */}
+      {notification && (
+        <MobileNotification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
+      {/* ユーザー情報 */}
+      <div className="bg-white rounded-xl p-4">
+        <h3 className="text-lg font-semibold mb-4">ユーザー情報</h3>
+        <div className="space-y-3">
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+            <User className="h-5 w-5 text-gray-600" />
+            <div>
+              <div className="font-medium text-gray-900">{user?.email}</div>
+              <div className="text-sm text-gray-500">システム設計アシスタント</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* プロジェクト情報 */}
+      {currentProject && (
+        <div className="bg-white rounded-xl p-4">
+          <h3 className="text-lg font-semibold mb-4">プロジェクト情報</h3>
+          <div className="space-y-3">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <div className="font-medium text-blue-900">{currentProject.name}</div>
+              {currentProject.description && (
+                <div className="text-sm text-blue-700 mt-1">{currentProject.description}</div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="text-center p-2 bg-gray-50 rounded">
+                <div className="font-bold text-gray-900">{phases.length}</div>
+                <div className="text-gray-500">フェーズ</div>
+              </div>
+              <div className="text-center p-2 bg-gray-50 rounded">
+                <div className="font-bold text-gray-900">{tasks.length}</div>
+                <div className="text-gray-500">タスク</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* データ管理 */}
+      <div className="bg-white rounded-xl p-4">
+        <h3 className="text-lg font-semibold mb-4">データ管理</h3>
+        <div className="space-y-3">
+          <button
+            onClick={handleExportData}
+            className="w-full flex items-center gap-3 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <Download className="h-5 w-5 text-blue-600" />
+            <span className="text-left text-blue-700">データをエクスポート</span>
+          </button>
+
+          <button
+            onClick={handleBackupData}
+            className="w-full flex items-center gap-3 p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+          >
+            <FileText className="h-5 w-5 text-green-600" />
+            <span className="text-left text-green-700">データをバックアップ</span>
+          </button>
+
+          <button
+            onClick={handleImportData}
+            className="w-full flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <Upload className="h-5 w-5 text-gray-600" />
+            <span className="text-left">データをインポート</span>
+          </button>
+        </div>
+      </div>
+
+      {/* アカウント管理 */}
+      <div className="bg-white rounded-xl p-4">
+        <h3 className="text-lg font-semibold mb-4">アカウント管理</h3>
+        <div className="space-y-3">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-red-700"
+          >
+            <LogOut className="h-5 w-5" />
+            <span className="text-left">ログアウト</span>
+          </button>
+        </div>
+      </div>
+
+      {/* アプリ情報 */}
+      <div className="bg-white rounded-xl p-4">
+        <h3 className="text-lg font-semibold mb-4">アプリ情報</h3>
+        <div className="space-y-3 text-sm text-gray-600">
+          <div className="flex justify-between">
+            <span>バージョン</span>
+            <span>1.0.0</span>
+          </div>
+          <div className="flex justify-between">
+            <span>開発者</span>
+            <span>システム設計アシスタント</span>
+          </div>
+          <div className="flex justify-between">
+            <span>最終更新</span>
+            <span>2024年12月</span>
+          </div>
+          <div className="flex justify-between">
+            <span>データベース</span>
+            <span>Supabase</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function MobileApp() {
+  const [activePhase, setActivePhase] = useState('');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [projectManagementOpen, setProjectManagementOpen] = useState(false);
+  const [activeView, setActiveView] = useState('phase'); // 'phase' | 'templates' | 'guide' | 'documents' | 'settings'
+  const [notification, setNotification] = useState<Notification | null>(null);
+  
+  const { currentProject } = useProject();
+  const { phases, tasks, deliverables, loading, updateTask, updateDeliverable } = useProjectData();
+
+  // データを組み合わせて表示用のフェーズデータを作成
+  const phasesWithData = phases.map(phase => ({
+    ...phase,
+    title: phase.name,
+    tasks: tasks.filter(task => task.phase_id === phase.id),
+    deliverables: deliverables.filter(deliverable => deliverable.phase_id === phase.id),
+  }));
+
+  // activePhaseの初期値を設定
+  useEffect(() => {
+    if (phasesWithData.length > 0 && !activePhase) {
+      setActivePhase(phasesWithData[0].id);
+    } else if (phasesWithData.length > 0 && !phasesWithData.find(phase => phase.id === activePhase)) {
+      setActivePhase(phasesWithData[0].id);
+    }
+  }, [phasesWithData, activePhase]);
+
+  const currentPhase = phasesWithData.find(phase => phase.id === activePhase);
+
+  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setNotification({ message, type });
+  };
+
+  // タスク・成果物の状態更新（実際のデータベースと連携）
+  const handleTaskUpdate = async (taskId, isCompleted) => {
+    try {
+      await updateTask(taskId, { status: isCompleted ? 'completed' : 'todo' });
+      showNotification(isCompleted ? 'タスクを完了しました' : 'タスクを未完了にしました', 'success');
+    } catch (error) {
+      console.error('タスク更新エラー:', error);
+      showNotification('タスクの更新に失敗しました', 'error');
+    }
+  };
+
+  const handleDeliverableUpdate = async (deliverableId, status) => {
+    try {
+      // フロントエンドのステータスをデータベースのステータスに変換
+      const dbStatus = status === 'not-started' ? 'pending' : status;
+      await updateDeliverable(deliverableId, { status: dbStatus });
+      showNotification('成果物のステータスを更新しました', 'success');
+    } catch (error) {
+      console.error('成果物更新エラー:', error);
+      showNotification('成果物の更新に失敗しました', 'error');
+    }
   };
 
   // 成果物チェックリストの状態更新
-  const handleDeliverableCheck = (phaseId, deliverableId, status) => {
-    setPhaseData(prev => {
-      const phase = prev[phaseId];
-      const newDeliverables = phase.deliverables.map(d => d.id === deliverableId ? { ...d, status } : d);
-      return {
-        ...prev,
-        [phaseId]: { ...phase, deliverables: newDeliverables },
-      };
-    });
+  const handleDeliverableCheck = async (phaseId, deliverableId, isCompleted) => {
+    try {
+      const status = isCompleted ? 'completed' : 'pending';
+      await updateDeliverable(deliverableId, { status });
+      showNotification(isCompleted ? '成果物を完了しました' : '成果物を未完了にしました', 'success');
+    } catch (error) {
+      console.error('成果物チェックエラー:', error);
+      showNotification('成果物の更新に失敗しました', 'error');
+    }
   };
 
   // activeViewの値をデバッグ出力
   console.log('activeView:', activeView);
 
+  // ローディング状態
+  if (loading) {
+    return (
+      <div className="flex flex-col h-screen bg-gray-50">
+        <header className="flex items-center justify-between h-14 px-4 bg-white border-b shadow-sm">
+          <span className="font-bold text-lg">システム設計アシスタント</span>
+        </header>
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">データを読み込み中...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // フェーズデータが空の場合
+  if (phasesWithData.length === 0) {
+    return (
+      <div className="flex flex-col h-screen bg-gray-50">
+        <header className="flex items-center justify-between h-14 px-4 bg-white border-b shadow-sm">
+          <span className="font-bold text-lg">システム設計アシスタント</span>
+        </header>
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-lg mb-2">フェーズデータが見つかりません</div>
+            <div className="text-sm text-gray-500">プロジェクトにフェーズが設定されていない可能性があります</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen bg-gray-50">
+      {/* 通知 */}
+      {notification && (
+        <MobileNotification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+
       {/* ヘッダー */}
       <header className="flex items-center justify-between h-14 px-4 bg-white border-b shadow-sm">
-        <span className="font-bold text-lg">システム設計アシスタント</span>
-        <button onClick={() => setDrawerOpen(true)} className="p-2">
-          <span className="text-2xl">☰</span> {/* ハンバーガー */}
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="font-bold text-lg">システム設計アシスタント</span>
+          {currentProject && (
+            <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              {currentProject.name}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => setProjectManagementOpen(true)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Settings className="h-5 w-5 text-gray-600" />
+          </button>
+          <button onClick={() => setDrawerOpen(true)} className="p-2">
+            <span className="text-2xl">☰</span>
+          </button>
+        </div>
       </header>
 
       {/* メイン */}
       <main className="flex-1 overflow-y-auto p-4 pb-20">
-        {activeView === "phase" && (
+        {activeView === "phase" && currentPhase && (
           <>
-            <MobilePhaseOverview phase={phaseData[activePhase]} />
+            <MobilePhaseOverview phase={currentPhase} />
             <MobileTaskManager
-              phase={phaseData[activePhase]}
+              phase={currentPhase}
               onTaskUpdate={handleTaskUpdate}
             />
             <MobileDeliverableTracker
-              phase={phaseData[activePhase]}
+              phase={currentPhase}
               onStatusUpdate={handleDeliverableUpdate}
             />
           </>
@@ -679,21 +1379,29 @@ export default function MobileApp() {
         {activeView === "templates" && <MobileTemplates />}
         {activeView === "guide" && <MobileGuide />}
         {activeView === "documents" && <MobileDocumentManager />}
+        {activeView === "settings" && <MobileSettings />}
         {activeView === "deliverables-checklist" && (
-          <MobileDeliverablesChecklist phaseData={phaseData} onCheck={handleDeliverableCheck} />
+          <MobileDeliverablesChecklist 
+            phaseData={Object.fromEntries(phasesWithData.map(phase => [phase.id, phase]))} 
+            onCheck={handleDeliverableCheck} 
+          />
         )}
       </main>
 
       {/* フッター（ボトムナビゲーション） */}
       <footer className="fixed bottom-0 left-0 w-full bg-white border-t flex justify-around items-center h-24 z-20">
-        {phases.map(phase => (
+        {phasesWithData.map(phase => (
           <button
             key={phase.id}
             onClick={() => { setActivePhase(phase.id); setActiveView('phase'); }}
             className={`flex flex-col items-center justify-center flex-1 py-2 ${activePhase === phase.id && activeView === 'phase' ? 'text-blue-600 font-bold' : 'text-gray-500'}`}
           >
-            <span className="text-2xl">{phase.icon}</span>
-            <span className="text-sm mt-1">{phase.label}</span>
+            <span className="text-2xl">
+              {phase.title === '要件定義' ? '🔍' : 
+               phase.title === '基本設計' ? '📝' : 
+               phase.title === '外部設計' ? '📐' : '⚙️'}
+            </span>
+            <span className="text-sm mt-1">{phase.title}</span>
           </button>
         ))}
       </footer>
@@ -708,11 +1416,18 @@ export default function MobileApp() {
               <button className="text-left text-base py-2" onClick={() => { setActiveView('guide'); setDrawerOpen(false); }}>基本ガイド</button>
               <button className="text-left text-base py-2" onClick={() => { setActiveView('documents'); setDrawerOpen(false); }}>ドキュメント管理</button>
               <button className="text-left text-base py-2" onClick={() => { setActiveView('deliverables-checklist'); setDrawerOpen(false); }}>成果物チェック</button>
+              <button className="text-left text-base py-2" onClick={() => { setActiveView('settings'); setDrawerOpen(false); }}>設定</button>
             </nav>
           </div>
           <div className="flex-1" onClick={() => setDrawerOpen(false)} />
         </div>
       )}
+
+      {/* プロジェクト管理モーダル */}
+      <MobileProjectManagement
+        isOpen={projectManagementOpen}
+        onClose={() => setProjectManagementOpen(false)}
+      />
     </div>
   );
 } 
