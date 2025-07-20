@@ -112,12 +112,8 @@ function MobilePhaseOverview({ phase }) {
   );
 }
 
-// 検索・フィルタリング機能付きタスク一覧
+// 検索・フィルタリング機能なしのタスク一覧
 function MobileTaskManager({ phase, onTaskUpdate }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
-
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-700';
@@ -136,70 +132,18 @@ function MobileTaskManager({ phase, onTaskUpdate }) {
     }
   };
 
-  // フィルタリングされたタスク
-  const filteredTasks = phase.tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (task.description && task.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = statusFilter === 'all' || 
-                         (statusFilter === 'completed' && task.status === 'completed') ||
-                         (statusFilter === 'pending' && task.status !== 'completed');
-    const matchesPriority = priorityFilter === 'all' || task.priority === priorityFilter;
-    
-    return matchesSearch && matchesStatus && matchesPriority;
-  });
-
   return (
     <div className="mb-6">
       <h2 className="text-base font-bold mb-3">主要タスク</h2>
       
-      {/* 検索・フィルター */}
-      <div className="space-y-3 mb-4">
-        {/* 検索バー */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="タスクを検索..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-
-        {/* フィルター */}
-        <div className="flex gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="all">すべてのステータス</option>
-            <option value="completed">完了済み</option>
-            <option value="pending">未完了</option>
-          </select>
-          
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="all">すべての優先度</option>
-            <option value="high">高優先度</option>
-            <option value="medium">中優先度</option>
-            <option value="low">低優先度</option>
-          </select>
-        </div>
-      </div>
-
       {/* タスク一覧 */}
       <div className="space-y-3">
-        {filteredTasks.length === 0 ? (
+        {phase.tasks.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-            <p>条件に一致するタスクが見つかりません</p>
+            <p>タスクがありません</p>
           </div>
         ) : (
-          filteredTasks.map(task => (
+          phase.tasks.map(task => (
             <div key={task.id} className="flex items-start gap-3 p-3 border rounded-lg bg-white">
               <input
                 type="checkbox"
@@ -222,12 +166,8 @@ function MobileTaskManager({ phase, onTaskUpdate }) {
   );
 }
 
-// 検索・フィルタリング機能付き成果物一覧
+// 検索・フィルタリング機能なしの成果物一覧
 function MobileDeliverableTracker({ phase, onStatusUpdate }) {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
-
   const getStatusColor = (status) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-700';
@@ -258,70 +198,18 @@ function MobileDeliverableTracker({ phase, onStatusUpdate }) {
     }
   };
 
-  // フィルタリングされた成果物
-  const filteredDeliverables = phase.deliverables.filter(deliverable => {
-    const matchesSearch = (deliverable.name || deliverable.title).toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (deliverable.description && deliverable.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = statusFilter === 'all' || deliverable.status === statusFilter;
-    const matchesType = typeFilter === 'all' || deliverable.type === typeFilter;
-    
-    return matchesSearch && matchesStatus && matchesType;
-  });
-
   return (
     <div className="mb-6">
       <h2 className="text-base font-bold mb-3">主要成果物</h2>
       
-      {/* 検索・フィルター */}
-      <div className="space-y-3 mb-4">
-        {/* 検索バー */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="成果物を検索..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-
-        {/* フィルター */}
-        <div className="flex gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="all">すべてのステータス</option>
-            <option value="completed">完了</option>
-            <option value="in-progress">進行中</option>
-            <option value="pending">未着手</option>
-          </select>
-          
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm"
-          >
-            <option value="all">すべてのタイプ</option>
-            <option value="document">ドキュメント</option>
-            <option value="design">設計</option>
-            <option value="code">コード</option>
-            <option value="other">その他</option>
-          </select>
-        </div>
-      </div>
-
       {/* 成果物一覧 */}
       <div className="space-y-3">
-        {filteredDeliverables.length === 0 ? (
+        {phase.deliverables.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-            <p>条件に一致する成果物が見つかりません</p>
+            <p>成果物がありません</p>
           </div>
         ) : (
-          filteredDeliverables.map(deliverable => (
+          phase.deliverables.map(deliverable => (
             <div key={deliverable.id} className="p-3 border rounded-lg bg-white space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">{deliverable.name || deliverable.title}</span>
@@ -1290,15 +1178,12 @@ export default function MobileApp() {
     }
   };
 
-  // activeViewの値をデバッグ出力
-  console.log('activeView:', activeView);
-
   // ローディング状態
   if (loading) {
     return (
       <div className="flex flex-col h-screen bg-gray-50">
         <header className="flex items-center justify-between h-14 px-4 bg-white border-b shadow-sm">
-          <span className="font-bold text-lg">システム設計アシスタント</span>
+          <span className="font-bold text-lg">{currentProject?.name || 'システム設計アシスタント'}</span>
         </header>
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -1315,7 +1200,7 @@ export default function MobileApp() {
     return (
       <div className="flex flex-col h-screen bg-gray-50">
         <header className="flex items-center justify-between h-14 px-4 bg-white border-b shadow-sm">
-          <span className="font-bold text-lg">システム設計アシスタント</span>
+          <span className="font-bold text-lg">{currentProject?.name || 'システム設計アシスタント'}</span>
         </header>
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
@@ -1341,12 +1226,7 @@ export default function MobileApp() {
       {/* ヘッダー */}
       <header className="flex items-center justify-between h-14 px-4 bg-white border-b shadow-sm">
         <div className="flex items-center gap-3">
-          <span className="font-bold text-lg">システム設計アシスタント</span>
-          {currentProject && (
-            <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-              {currentProject.name}
-            </div>
-          )}
+          <span className="font-bold text-lg">{currentProject?.name || 'システム設計アシスタント'}</span>
         </div>
         <div className="flex items-center gap-2">
           <button 
