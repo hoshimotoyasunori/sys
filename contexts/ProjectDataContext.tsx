@@ -17,6 +17,7 @@ interface Phase {
 
 interface Task {
   id: string;
+  project_id: string;
   phase_id: string;
   title: string;
   description?: string;
@@ -29,6 +30,7 @@ interface Task {
 
 interface Deliverable {
   id: string;
+  project_id: string;
   phase_id: string;
   name: string;
   description?: string;
@@ -336,23 +338,39 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const createPhaseData = async (phase: any) => {
+    console.log('🔧 フェーズデータ作成開始:', phase.name, phase.id);
+    
     const phaseTasks = getPhaseTasks(phase.name);
     const phaseDeliverables = getPhaseDeliverables(phase.name);
+
+    // 現在のユーザーIDを取得
+    const { data: { user } } = await supabase.auth.getUser();
+    const currentUserId = user?.id;
+
+    console.log('📋 作成予定タスク数:', phaseTasks.length);
+    console.log('📦 作成予定成果物数:', phaseDeliverables.length);
 
     // タスクを作成
     if (phaseTasks.length > 0) {
       const tasksWithPhaseId = phaseTasks.map((task, index) => ({
         ...task,
+        project_id: currentProject?.id,
         phase_id: phase.id,
+        created_by: currentUserId,
         order_index: index + 1,
       }));
 
-      const { error: tasksError } = await supabase
+      console.log('📝 タスク作成データ:', tasksWithPhaseId);
+
+      const { data: createdTasks, error: tasksError } = await supabase
         .from('tasks')
-        .insert(tasksWithPhaseId);
+        .insert(tasksWithPhaseId)
+        .select();
 
       if (tasksError) {
-        console.error('Error creating tasks for phase:', phase.name, tasksError);
+        console.error('❌ タスク作成エラー:', phase.name, tasksError);
+      } else {
+        console.log('✅ タスク作成成功:', createdTasks?.length || 0, '件');
       }
     }
 
@@ -360,16 +378,23 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
     if (phaseDeliverables.length > 0) {
       const deliverablesWithPhaseId = phaseDeliverables.map((deliverable, index) => ({
         ...deliverable,
+        project_id: currentProject?.id,
         phase_id: phase.id,
+        created_by: currentUserId,
         order_index: index + 1,
       }));
 
-      const { error: deliverablesError } = await supabase
+      console.log('📦 成果物作成データ:', deliverablesWithPhaseId);
+
+      const { data: createdDeliverables, error: deliverablesError } = await supabase
         .from('deliverables')
-        .insert(deliverablesWithPhaseId);
+        .insert(deliverablesWithPhaseId)
+        .select();
 
       if (deliverablesError) {
-        console.error('Error creating deliverables for phase:', phase.name, deliverablesError);
+        console.error('❌ 成果物作成エラー:', phase.name, deliverablesError);
+      } else {
+        console.log('✅ 成果物作成成功:', createdDeliverables?.length || 0, '件');
       }
     }
   };
@@ -686,19 +711,52 @@ function ProjectDataProvider({ children }: { children: React.ReactNode }) {
   };
 
   const createMissingTasksAndDeliverables = async (projectId: string) => {
-    const phases = await supabase
+    console.log('🚀 タスク・成果物作成プロセス開始:', projectId);
+    
+    const { data: phasesData, error: phasesError } = await supabase
       .from('phases')
       .select('id, name')
       .eq('project_id', projectId);
 
-    if (phases.error) {
-      console.error('プロジェクトのフェーズを取得できませんでした:', phases.error);
+    if (phasesError) {
+      console.error('❌ プロジェクトのフェーズを取得できませんでした:', phasesError);
       return;
     }
 
-    for (const phase of phases.data || []) {
-      await createPhaseData(phase);
+    console.log('📊 取得したフェーズ:', phasesData);
+
+    if (!phasesData || phasesData.length === 0) {
+      console.log('⚠️ フェーズが存在しません。初期フェーズを作成します...');
+      await createInitialPhases(projectId);
+      
+      // フェーズを再取得
+      const { data: newPhasesData, error: newPhasesError } = await supabase
+        .from('phases')
+        .select('id, name')
+        .eq('project_id', projectId);
+        
+      if (newPhasesError) {
+        console.error('❌ 新規フェーズの取得に失敗:', newPhasesError);
+        return;
+      }
+      
+      console.log('✅ 新規フェーズ作成完了:', newPhasesData);
+      
+      // 新規フェーズに対してタスク・成果物を作成
+      for (const phase of newPhasesData || []) {
+        await createPhaseData(phase);
+      }
+    } else {
+      // 既存フェーズに対してタスク・成果物を作成
+      for (const phase of phasesData) {
+        await createPhaseData(phase);
+      }
     }
+
+    console.log('🔄 データ再取得を実行...');
+    // 作成後にデータを再取得
+    await refreshData();
+    console.log('✅ タスク・成果物作成プロセス完了');
   };
 
   const value = {

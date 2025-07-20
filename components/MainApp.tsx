@@ -483,10 +483,15 @@ export const MainApp: React.FC = () => {
   };
 
   const handleCreateTasksAndDeliverables = async () => {
-    if (!currentProject || !currentPhase) return;
+    if (!currentProject || !currentPhase) {
+      console.error('❌ プロジェクトまたはフェーズが選択されていません');
+      return;
+    }
     
     try {
       console.log('🔄 タスクと成果物を作成中...');
+      console.log('📊 現在のプロジェクト:', currentProject.id);
+      console.log('📊 現在のフェーズ:', currentPhase.id);
       
       // ProjectDataContextのcreateMissingTasksAndDeliverables関数を呼び出し
       await createMissingTasksAndDeliverables(currentProject.id);
@@ -495,8 +500,13 @@ export const MainApp: React.FC = () => {
       await refreshData();
       
       console.log('✅ タスクと成果物の作成が完了しました');
+      
+      // ユーザーに成功メッセージを表示（将来的にトースト通知を追加可能）
+      alert('タスクと成果物の作成が完了しました。ページを更新してください。');
+      
     } catch (error) {
       console.error('❌ タスクと成果物の作成に失敗しました:', error);
+      alert('タスクと成果物の作成に失敗しました。コンソールを確認してください。');
     }
   };
 
