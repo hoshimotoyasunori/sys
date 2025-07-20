@@ -233,14 +233,7 @@ export function MobileDeliverablesChecklist({ onBack }: MobileDeliverablesCheckl
         </div>
       </div>
 
-      {/* デバッグ情報（開発時のみ表示） */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="p-4 bg-yellow-50 border-b border-yellow-200">
-          <p className="text-sm text-yellow-800">
-            デバッグ: プロジェクト={currentProject?.name}, フェーズ={phases.length}個, 成果物={deliverables.length}個, 読み込み中={loading ? 'はい' : 'いいえ'}
-          </p>
-        </div>
-      )}
+
 
       {/* 全体進捗 */}
       <div className="p-4">
@@ -374,14 +367,7 @@ export function MobileDeliverablesChecklist({ onBack }: MobileDeliverablesCheckl
                           </div>
                         </div>
                         
-                        {/* デバッグ情報（開発時のみ表示） */}
-                        {process.env.NODE_ENV === 'development' && (
-                          <div className="mt-2 pt-2 border-t border-gray-100">
-                            <p className="text-xs text-gray-400">
-                              ID: {deliverable.id} | ステータス: {deliverable.status} | タイプ: {deliverable.type}
-                            </p>
-                          </div>
-                        )}
+
                       </div>
                     ))}
                   </div>

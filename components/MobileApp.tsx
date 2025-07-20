@@ -448,6 +448,8 @@ function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
                   onClick={() => {
                     if (item.id === 'project') {
                       handleNavigateToView('project-management');
+                    } else if (item.id === 'deliverables') {
+                      handleNavigateToView('deliverables-checklist');
                     } else {
                       handleNavigateToView(item.id);
                     }

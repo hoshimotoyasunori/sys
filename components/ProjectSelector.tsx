@@ -70,17 +70,7 @@ export const ProjectSelector: React.FC<ProjectSelectorProps> = ({ children }) =>
             </p>
           </div>
 
-          {/* デバッグ情報 */}
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="text-sm text-blue-800">
-              デバッグ情報: プロジェクト数: {projects.length}
-            </p>
-            {projects.map((project, index) => (
-              <p key={project.id} className="text-xs text-blue-600 mt-1">
-                {index + 1}. {project.name} (ID: {project.id.slice(0, 8)}...)
-              </p>
-            ))}
-          </div>
+
 
           <Card>
             <CardHeader>
