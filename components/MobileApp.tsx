@@ -1480,6 +1480,7 @@ export default function MobileApp() {
   
   const { currentProject } = useProject();
   const { phases, tasks, deliverables, loading, updateTask, updateDeliverable } = useProjectData();
+  const { signOut } = useAuth();
 
   // データを組み合わせて表示用のフェーズデータを作成
   const phasesWithData = phases.map(phase => ({
@@ -1507,6 +1508,16 @@ export default function MobileApp() {
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setNotification({ message, type });
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      showNotification('ログアウトしました', 'success');
+    } catch (error) {
+      console.error('ログアウトエラー:', error);
+      showNotification('ログアウトに失敗しました', 'error');
+    }
   };
 
   // タスク・成果物の状態更新（実際のデータベースと連携）
@@ -1640,6 +1651,12 @@ export default function MobileApp() {
             className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
           >
             <Settings className="h-5 w-5 text-gray-600" />
+          </button>
+          <button 
+            onClick={handleLogout}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
+          >
+            <LogOut className="h-5 w-5 text-gray-600" />
           </button>
         </div>
       </header>
