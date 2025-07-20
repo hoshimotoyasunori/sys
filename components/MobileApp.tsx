@@ -1110,10 +1110,341 @@ function MobileSettings() {
   );
 }
 
+// 統一されたモーダルコンポーネント（アニメーション付き）
+function MobileUnifiedModal({ isOpen, onClose }) {
+  const [activeSection, setActiveSection] = useState('main');
+  const [notification, setNotification] = useState<Notification | null>(null);
+  
+  const { projects, currentProject, selectProject, deleteProject, createProject } = useProject();
+  const { signOut, user } = useAuth();
+  const { phases, tasks, deliverables } = useProjectData();
+
+  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    setNotification({ message, type });
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      showNotification('ログアウトしました', 'success');
+    } catch (error) {
+      console.error('ログアウトエラー:', error);
+      showNotification('ログアウトに失敗しました', 'error');
+    }
+  };
+
+  const handleProjectSelect = (project) => {
+    selectProject(project);
+    showNotification(`プロジェクト「${project.name}」に切り替えました`, 'success');
+    onClose();
+  };
+
+  const confirmDeleteProject = async () => {
+    if (currentProject && window.confirm(`プロジェクト「${currentProject.name}」を削除しますか？\nこの操作は取り消せません。`)) {
+      try {
+        await deleteProject(currentProject.id);
+        showNotification('プロジェクトを削除しました', 'success');
+        onClose();
+      } catch (error) {
+        console.error('プロジェクト削除エラー:', error);
+        showNotification('プロジェクトの削除に失敗しました', 'error');
+      }
+    }
+  };
+
+  const handleExportData = () => {
+    const data = {
+      project: currentProject,
+      phases,
+      tasks,
+      deliverables,
+      exportDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentProject?.name || 'project'}_data_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification('データをエクスポートしました', 'success');
+  };
+
+  const handleBackupData = () => {
+    const data = {
+      project: currentProject,
+      phases,
+      tasks,
+      deliverables,
+      backupDate: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentProject?.name || 'project'}_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    showNotification('バックアップを作成しました', 'success');
+  };
+
+  const handleImportData = () => {
+    // プレースホルダー実装
+    showNotification('インポート機能は今後実装予定です', 'info');
+  };
+
+  const menuItems = [
+    { id: 'project', label: 'プロジェクト管理', icon: <Settings className="h-5 w-5" />, color: 'text-blue-600' },
+    { id: 'templates', label: 'テンプレート', icon: <FileText className="h-5 w-5" />, color: 'text-green-600' },
+    { id: 'guide', label: '基本ガイド', icon: <Target className="h-5 w-5" />, color: 'text-purple-600' },
+    { id: 'documents', label: 'ドキュメント管理', icon: <Layers className="h-5 w-5" />, color: 'text-orange-600' },
+    { id: 'deliverables', label: '成果物チェック', icon: <CheckCircle className="h-5 w-5" />, color: 'text-red-600' },
+    { id: 'settings', label: '設定', icon: <User className="h-5 w-5" />, color: 'text-gray-600' },
+  ];
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* 背景オーバーレイ（アニメーション付き） */}
+      <div 
+        className="absolute inset-0 bg-black bg-opacity-50 transition-opacity duration-300"
+        onClick={onClose}
+      />
+      
+      {/* モーダル本体（アニメーション付き） */}
+      <div className="relative bg-white rounded-2xl shadow-2xl w-11/12 max-w-md max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-100">
+        {/* 通知 */}
+        {notification && (
+          <div className={`absolute top-4 left-4 right-4 z-10 p-3 rounded-lg shadow-lg transform transition-all duration-300 ${
+            notification.type === 'success' ? 'bg-green-100 text-green-800' :
+            notification.type === 'error' ? 'bg-red-100 text-red-800' :
+            'bg-blue-100 text-blue-800'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">{notification.message}</span>
+              <button 
+                onClick={() => setNotification(null)}
+                className="ml-2 text-lg hover:opacity-70 transition-opacity"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900">
+            {activeSection === 'main' ? 'メニュー' : 
+             activeSection === 'project' ? 'プロジェクト管理' :
+             activeSection === 'templates' ? 'テンプレート' :
+             activeSection === 'guide' ? '基本ガイド' :
+             activeSection === 'documents' ? 'ドキュメント管理' :
+             activeSection === 'deliverables' ? '成果物チェック' :
+             '設定'}
+          </h2>
+          <button 
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+          >
+            <span className="text-2xl text-gray-500 hover:text-gray-700">×</span>
+          </button>
+        </div>
+
+        {/* コンテンツ */}
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+          {activeSection === 'main' && (
+            <div className="space-y-3">
+              {menuItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 transform hover:scale-[1.02] bg-white"
+                >
+                  <div className={`p-2 rounded-lg bg-gray-50 ${item.color}`}>
+                    {item.icon}
+                  </div>
+                  <span className="text-left font-medium text-gray-900">{item.label}</span>
+                  <div className="ml-auto">
+                    <span className="text-gray-400">›</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {activeSection === 'project' && (
+            <div className="space-y-4">
+              {/* 現在のプロジェクト情報 */}
+              <div className="bg-blue-50 rounded-xl p-4">
+                <h3 className="font-bold text-blue-900 mb-2">現在のプロジェクト</h3>
+                <p className="text-blue-800">{currentProject?.name || 'プロジェクトが選択されていません'}</p>
+              </div>
+
+              {/* プロジェクト管理ボタン */}
+              <div className="space-y-3">
+                <button className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200">
+                  <Users className="h-5 w-5 text-blue-600" />
+                  <span className="font-medium">メンバー一覧</span>
+                </button>
+                
+                <button className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200">
+                  <Plus className="h-5 w-5 text-green-600" />
+                  <span className="font-medium">プロジェクト作成</span>
+                </button>
+                
+                <button className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50 transition-all duration-200">
+                  <Settings className="h-5 w-5 text-yellow-600" />
+                  <span className="font-medium">プロジェクト切り替え</span>
+                </button>
+                
+                <button 
+                  onClick={confirmDeleteProject}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all duration-200"
+                >
+                  <Trash2 className="h-5 w-5 text-red-600" />
+                  <span className="font-medium">プロジェクト削除</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'templates' && (
+            <div className="space-y-4">
+              <div className="text-center py-8">
+                <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">テンプレート</h3>
+                <p className="text-gray-600">システム設計に必要なテンプレートをダウンロードできます</p>
+              </div>
+              <button className="w-full p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200">
+                テンプレート一覧を表示
+              </button>
+            </div>
+          )}
+
+          {activeSection === 'guide' && (
+            <div className="space-y-4">
+              <div className="text-center py-8">
+                <Target className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">基本ガイド</h3>
+                <p className="text-gray-600">システム設計の基本手順を確認できます</p>
+              </div>
+              <button className="w-full p-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors duration-200">
+                ガイドを表示
+              </button>
+            </div>
+          )}
+
+          {activeSection === 'documents' && (
+            <div className="space-y-4">
+              <div className="text-center py-8">
+                <Layers className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">ドキュメント管理</h3>
+                <p className="text-gray-600">プロジェクトのドキュメントを管理できます</p>
+              </div>
+              <button className="w-full p-4 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors duration-200">
+                ドキュメント一覧を表示
+              </button>
+            </div>
+          )}
+
+          {activeSection === 'deliverables' && (
+            <div className="space-y-4">
+              <div className="text-center py-8">
+                <CheckCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">成果物チェック</h3>
+                <p className="text-gray-600">全フェーズの成果物を一覧で確認できます</p>
+              </div>
+              <button className="w-full p-4 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors duration-200">
+                成果物チェックリストを表示
+              </button>
+            </div>
+          )}
+
+          {activeSection === 'settings' && (
+            <div className="space-y-4">
+              {/* ユーザー情報 */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="font-bold text-gray-900 mb-2">ユーザー情報</h3>
+                <p className="text-gray-600">{user?.email || '未ログイン'}</p>
+              </div>
+
+              {/* プロジェクト情報 */}
+              <div className="bg-blue-50 rounded-xl p-4">
+                <h3 className="font-bold text-blue-900 mb-2">プロジェクト情報</h3>
+                <p className="text-blue-800">{currentProject?.name || 'プロジェクトが選択されていません'}</p>
+              </div>
+
+              {/* データ管理 */}
+              <div className="space-y-3">
+                <button 
+                  onClick={handleExportData}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200"
+                >
+                  <Download className="h-5 w-5 text-green-600" />
+                  <span className="font-medium">データエクスポート</span>
+                </button>
+                
+                <button 
+                  onClick={handleBackupData}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
+                >
+                  <Upload className="h-5 w-5 text-blue-600" />
+                  <span className="font-medium">バックアップ作成</span>
+                </button>
+                
+                <button 
+                  onClick={handleImportData}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200"
+                >
+                  <Upload className="h-5 w-5 text-purple-600" />
+                  <span className="font-medium">データインポート</span>
+                </button>
+              </div>
+
+              {/* アカウント管理 */}
+              <div className="pt-4 border-t border-gray-200">
+                <button 
+                  onClick={handleLogout}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all duration-200"
+                >
+                  <LogOut className="h-5 w-5 text-red-600" />
+                  <span className="font-medium">ログアウト</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 戻るボタン（メイン以外の画面で表示） */}
+        {activeSection !== 'main' && (
+          <div className="p-6 border-t border-gray-200">
+            <button 
+              onClick={() => setActiveSection('main')}
+              className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
+            >
+              <span className="text-lg">‹</span>
+              <span className="font-medium">戻る</span>
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function MobileApp() {
   const [activePhase, setActivePhase] = useState('');
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [projectManagementOpen, setProjectManagementOpen] = useState(false);
+  const [unifiedModalOpen, setUnifiedModalOpen] = useState(false);
   const [activeView, setActiveView] = useState('phase'); // 'phase' | 'templates' | 'guide' | 'documents' | 'settings'
   const [notification, setNotification] = useState<Notification | null>(null);
   
@@ -1230,13 +1561,10 @@ export default function MobileApp() {
         </div>
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => setProjectManagementOpen(true)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            onClick={() => setUnifiedModalOpen(true)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
           >
             <Settings className="h-5 w-5 text-gray-600" />
-          </button>
-          <button onClick={() => setDrawerOpen(true)} className="p-2">
-            <span className="text-2xl">☰</span>
           </button>
         </div>
       </header>
@@ -1274,7 +1602,9 @@ export default function MobileApp() {
           <button
             key={phase.id}
             onClick={() => { setActivePhase(phase.id); setActiveView('phase'); }}
-            className={`flex flex-col items-center justify-center flex-1 py-2 ${activePhase === phase.id && activeView === 'phase' ? 'text-blue-600 font-bold' : 'text-gray-500'}`}
+            className={`flex flex-col items-center justify-center flex-1 py-2 transition-all duration-200 transform hover:scale-105 active:scale-95 ${
+              activePhase === phase.id && activeView === 'phase' ? 'text-blue-600 font-bold' : 'text-gray-500'
+            }`}
           >
             <span className="text-2xl">
               {phase.title === '要件定義' ? '🔍' : 
@@ -1286,27 +1616,10 @@ export default function MobileApp() {
         ))}
       </footer>
 
-      {/* ドロワー（ハンバーガーメニュー） */}
-      {drawerOpen && (
-        <div className="fixed inset-0 z-30 bg-black bg-opacity-30 flex">
-          <div className="w-64 bg-white h-full shadow-lg p-6 flex flex-col">
-            <button onClick={() => setDrawerOpen(false)} className="self-end mb-4 text-2xl">×</button>
-            <nav className="flex flex-col gap-4">
-              <button className="text-left text-base py-2" onClick={() => { setActiveView('templates'); setDrawerOpen(false); }}>テンプレート</button>
-              <button className="text-left text-base py-2" onClick={() => { setActiveView('guide'); setDrawerOpen(false); }}>基本ガイド</button>
-              <button className="text-left text-base py-2" onClick={() => { setActiveView('documents'); setDrawerOpen(false); }}>ドキュメント管理</button>
-              <button className="text-left text-base py-2" onClick={() => { setActiveView('deliverables-checklist'); setDrawerOpen(false); }}>成果物チェック</button>
-              <button className="text-left text-base py-2" onClick={() => { setActiveView('settings'); setDrawerOpen(false); }}>設定</button>
-            </nav>
-          </div>
-          <div className="flex-1" onClick={() => setDrawerOpen(false)} />
-        </div>
-      )}
-
-      {/* プロジェクト管理モーダル */}
-      <MobileProjectManagement
-        isOpen={projectManagementOpen}
-        onClose={() => setProjectManagementOpen(false)}
+      {/* 統一されたモーダル */}
+      <MobileUnifiedModal
+        isOpen={unifiedModalOpen}
+        onClose={() => setUnifiedModalOpen(false)}
       />
     </div>
   );
