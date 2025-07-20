@@ -409,6 +409,7 @@ export const MainApp: React.FC = () => {
   const [currentView, setCurrentView] = useState<'phases' | 'guide' | 'checklist' | 'templates'>('phases');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
+  const [activePhase, setActivePhase] = useState<string | null>(null);
 
   // データを組み合わせて表示用のフェーズデータを作成
   const phasesWithData = phases.map(phase => ({
@@ -418,16 +419,21 @@ export const MainApp: React.FC = () => {
     deliverables: deliverables.filter(deliverable => deliverable.phase_id === phase.id),
   }));
 
-  // activePhaseの初期値を設定
+  // activePhaseの初期値を設定（より安全な処理）
   useEffect(() => {
-    if (phasesWithData.length > 0 && !activePhase) {
-      setActivePhase(phasesWithData[0].id);
-    } else if (phasesWithData.length > 0 && !phasesWithData.find(phase => phase.id === activePhase)) {
-      setActivePhase(phasesWithData[0].id);
+    if (phasesWithData.length > 0) {
+      // activePhaseがnullの場合、または現在のactivePhaseが有効でない場合のみ設定
+      if (!activePhase || !phasesWithData.find(phase => phase.id === activePhase)) {
+        setActivePhase(phasesWithData[0].id);
+      }
+    } else {
+      // フェーズデータが空の場合はactivePhaseをリセット
+      setActivePhase(null);
     }
-  }, [phasesWithData, activePhase]);
+  }, [phasesWithData]); // activePhaseを依存配列から削除
 
-  const currentPhase = phasesWithData.find(phase => phase.id === activePhase);
+  // currentPhaseを安全に取得
+  const currentPhase = activePhase ? phasesWithData.find(phase => phase.id === activePhase) : null;
 
   const totalTasks = phasesWithData.reduce((acc, phase) => acc + phase.tasks.length, 0);
   const completedTasks = phasesWithData.reduce((acc, phase) => 
