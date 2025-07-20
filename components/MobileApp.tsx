@@ -1473,7 +1473,7 @@ function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
 }
 
 export default function MobileApp() {
-  const [activePhase, setActivePhase] = useState('');
+  const [activePhase, setActivePhase] = useState<string>('');
   const [unifiedModalOpen, setUnifiedModalOpen] = useState(false);
   const [activeView, setActiveView] = useState('phase'); // 'phase' | 'templates' | 'guide' | 'documents' | 'settings'
   const [notification, setNotification] = useState<Notification | null>(null);
@@ -1489,16 +1489,22 @@ export default function MobileApp() {
     deliverables: deliverables.filter(deliverable => deliverable.phase_id === phase.id),
   }));
 
-  // activePhaseの初期値を設定
+  // activePhaseの初期値を設定（より安全な処理）
   useEffect(() => {
-    if (phasesWithData.length > 0 && !activePhase) {
-      setActivePhase(phasesWithData[0].id);
-    } else if (phasesWithData.length > 0 && !phasesWithData.find(phase => phase.id === activePhase)) {
-      setActivePhase(phasesWithData[0].id);
+    if (phasesWithData.length > 0) {
+      // 現在のactivePhaseが有効でない場合、または空の場合
+      const isValidPhase = activePhase && phasesWithData.find(phase => phase.id === activePhase);
+      if (!isValidPhase) {
+        setActivePhase(phasesWithData[0].id);
+      }
+    } else {
+      // フェーズデータが空の場合はactivePhaseをリセット
+      setActivePhase('');
     }
   }, [phasesWithData, activePhase]);
 
-  const currentPhase = phasesWithData.find(phase => phase.id === activePhase);
+  // currentPhaseを安全に取得
+  const currentPhase = activePhase ? phasesWithData.find(phase => phase.id === activePhase) : null;
 
   const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     setNotification({ message, type });
@@ -1562,6 +1568,23 @@ export default function MobileApp() {
     );
   }
 
+  // プロジェクトが選択されていない場合
+  if (!currentProject) {
+    return (
+      <div className="flex flex-col h-screen bg-gray-50">
+        <header className="flex items-center justify-between h-14 px-4 bg-white border-b shadow-sm">
+          <span className="font-bold text-lg">システム設計アシスタント</span>
+        </header>
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-lg mb-2">プロジェクトが選択されていません</div>
+            <div className="text-sm text-gray-500">プロジェクトを選択してください</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   // フェーズデータが空の場合
   if (phasesWithData.length === 0) {
     return (
@@ -1573,6 +1596,23 @@ export default function MobileApp() {
           <div className="text-center">
             <div className="text-lg mb-2">フェーズデータが見つかりません</div>
             <div className="text-sm text-gray-500">プロジェクトにフェーズが設定されていない可能性があります</div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // 現在のフェーズが取得できない場合
+  if (!currentPhase) {
+    return (
+      <div className="flex flex-col h-screen bg-gray-50">
+        <header className="flex items-center justify-between h-14 px-4 bg-white border-b shadow-sm">
+          <span className="font-bold text-lg">{currentProject?.name || 'システム設計アシスタント'}</span>
+        </header>
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-lg mb-2">フェーズの読み込みに失敗しました</div>
+            <div className="text-sm text-gray-500">ページを再読み込みしてください</div>
           </div>
         </main>
       </div>
