@@ -1,17 +1,12 @@
-import React, { useState } from 'react';
-import { Users, Plus, Settings, Trash2, LogOut, User, ArrowLeft, Search, Mail, Phone, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Users, Plus, Settings, Trash2, LogOut, User, ArrowLeft, Search, Mail, Phone, Calendar, UserPlus, X, Crown, Shield } from 'lucide-react';
+import { useProject } from '../contexts/ProjectContext';
+import { useProjectMembers } from '../contexts/ProjectMembersContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface MobileProjectManagementProps {
   onBack: () => void;
   onNavigateToView: (view: string) => void;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  createdAt: string;
-  memberCount: number;
 }
 
 interface Member {
@@ -24,86 +19,170 @@ interface Member {
 }
 
 export function MobileProjectManagement({ onBack, onNavigateToView }: MobileProjectManagementProps) {
-  const [activeView, setActiveView] = useState<'main' | 'members' | 'create' | 'switch'>('main');
+  const [activeView, setActiveView] = useState<'main' | 'members' | 'create' | 'switch' | 'invite'>('main');
   const [searchTerm, setSearchTerm] = useState('');
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteRole, setInviteRole] = useState<'admin' | 'member'>('member');
+  const [inviting, setInviting] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDescription, setNewProjectDescription] = useState('');
 
-  // モックデータ
-  const mockMembers: Member[] = [
-    {
-      id: '1',
-      name: '田中太郎',
-      email: 'tanaka@example.com',
-      role: 'プロジェクトマネージャー',
-      avatar: '👨‍💼',
-      joinedAt: '2024-01-15'
-    },
-    {
-      id: '2',
-      name: '佐藤花子',
-      email: 'sato@example.com',
-      role: 'システムエンジニア',
-      avatar: '👩‍💻',
-      joinedAt: '2024-02-01'
-    },
-    {
-      id: '3',
-      name: '鈴木一郎',
-      email: 'suzuki@example.com',
-      role: 'UI/UXデザイナー',
-      avatar: '👨‍🎨',
-      joinedAt: '2024-02-10'
-    },
-    {
-      id: '4',
-      name: '高橋美咲',
-      email: 'takahashi@example.com',
-      role: 'テスター',
-      avatar: '👩‍🔬',
-      joinedAt: '2024-03-01'
+  // コンテキストからデータを取得
+  const { user } = useAuth();
+  const { projects, currentProject, createProject, deleteProject, selectProject } = useProject();
+  const { 
+    members, 
+    invitations, 
+    loading, 
+    fetchMembers, 
+    inviteMember, 
+    updateMemberRole, 
+    removeMember 
+  } = useProjectMembers();
+
+  // メンバー一覧を取得
+  useEffect(() => {
+    if (currentProject && activeView === 'members') {
+      fetchMembers(currentProject.id);
     }
-  ];
+  }, [currentProject, activeView, fetchMembers]);
 
-  const mockProjects: Project[] = [
-    {
-      id: '1',
-      name: 'ECサイト開発プロジェクト',
-      description: 'オンラインショッピングサイトの開発',
-      createdAt: '2024-01-01',
-      memberCount: 8
-    },
-    {
-      id: '2',
-      name: '社内管理システム',
-      description: '従業員管理と勤怠管理システム',
-      createdAt: '2024-02-01',
-      memberCount: 5
-    },
-    {
-      id: '3',
-      name: 'モバイルアプリ開発',
-      description: 'iOS/Androidアプリの開発',
-      createdAt: '2024-03-01',
-      memberCount: 6
-    }
-  ];
-
-  const filteredMembers = mockMembers.filter(member =>
-    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredMembers = members.filter(member =>
+    member.user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    member.user?.user_metadata?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     member.role.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredProjects = mockProjects.filter(project =>
+  const filteredProjects = projects.filter(project =>
     project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.description.toLowerCase().includes(searchTerm.toLowerCase())
+    project.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleInviteMember = async () => {
+    if (!inviteEmail.trim() || !currentProject) return;
+
+    setInviting(true);
+    try {
+      const { error } = await inviteMember(currentProject.id, inviteEmail.trim(), inviteRole);
+      if (error) {
+        alert(`招待エラー: ${error.message}`);
+      } else {
+        alert(`${inviteEmail} に招待メールを送信しました`);
+        setInviteEmail('');
+        setInviteRole('member');
+        // メンバーリストを更新
+        await fetchMembers(currentProject.id);
+      }
+    } catch (error) {
+      alert('招待処理中にエラーが発生しました');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleCreateProject = async () => {
+    if (!newProjectName.trim()) return;
+
+    try {
+      const { error } = await createProject(newProjectName, newProjectDescription);
+      if (error) {
+        alert(`プロジェクト作成エラー: ${error.message}`);
+      } else {
+        alert('プロジェクトを作成しました');
+        setNewProjectName('');
+        setNewProjectDescription('');
+        setActiveView('main');
+      }
+    } catch (error) {
+      alert('プロジェクト作成中にエラーが発生しました');
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!currentProject || !window.confirm('このメンバーを削除しますか？')) return;
+
+    try {
+      const { error } = await removeMember(currentProject.id, memberId);
+      if (error) {
+        alert(`削除エラー: ${error.message}`);
+      } else {
+        alert('メンバーを削除しました');
+      }
+    } catch (error) {
+      alert('削除処理中にエラーが発生しました');
+    }
+  };
+
+  const handleUpdateRole = async (memberId: string, newRole: 'admin' | 'member') => {
+    if (!currentProject) return;
+
+    try {
+      const { error } = await updateMemberRole(currentProject.id, memberId, newRole);
+      if (error) {
+        alert(`権限更新エラー: ${error.message}`);
+      } else {
+        alert('権限を更新しました');
+      }
+    } catch (error) {
+      alert('権限更新処理中にエラーが発生しました');
+    }
+  };
+
+  const handleProjectSelect = (project: any) => {
+    selectProject(project);
+    alert(`プロジェクト「${project.name}」に切り替えました`);
+    setActiveView('main');
+  };
+
+  const handleDeleteProject = async () => {
+    if (!currentProject || !window.confirm('プロジェクトを削除しますか？この操作は取り消せません。')) return;
+
+    try {
+      const { error } = await deleteProject(currentProject.id);
+      if (error) {
+        alert(`削除エラー: ${error.message}`);
+      } else {
+        alert('プロジェクトを削除しました');
+        setActiveView('main');
+      }
+    } catch (error) {
+      alert('削除処理中にエラーが発生しました');
+    }
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'owner': return <Crown className="h-4 w-4 text-yellow-600" />;
+      case 'admin': return <Shield className="h-4 w-4 text-blue-600" />;
+      default: return <User className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    switch (role) {
+      case 'owner': return 'オーナー';
+      case 'admin': return '管理者';
+      case 'member': return 'メンバー';
+      default: return role;
+    }
+  };
+
+  const canManageMembers = () => {
+    if (!currentProject || !user) return false;
+    const currentMember = members.find(m => m.user_id === user.id);
+    return currentMember?.role === 'owner' || currentMember?.role === 'admin';
+  };
+
+  const isCurrentUser = (memberId: string) => {
+    return members.find(m => m.id === memberId)?.user_id === user?.id;
+  };
 
   const renderMainView = () => (
     <div className="space-y-4">
       <div className="bg-blue-50 rounded-xl p-4">
         <h3 className="font-bold text-blue-900 mb-2">現在のプロジェクト</h3>
-        <p className="text-blue-800">ECサイト開発プロジェクト</p>
-        <p className="text-sm text-blue-600 mt-1">メンバー数: 8名</p>
+        <p className="text-blue-800">{currentProject?.name || 'プロジェクトが選択されていません'}</p>
+        <p className="text-sm text-blue-600 mt-1">メンバー数: {members.length}名</p>
       </div>
 
       <div className="space-y-3">
@@ -147,11 +226,7 @@ export function MobileProjectManagement({ onBack, onNavigateToView }: MobileProj
         </button>
         
         <button 
-          onClick={() => {
-            if (window.confirm('プロジェクトを削除しますか？この操作は取り消せません。')) {
-              // 削除処理
-            }
-          }}
+          onClick={handleDeleteProject}
           className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all duration-200 bg-white"
         >
           <div className="p-2 rounded-lg bg-gray-50 text-red-600">
@@ -176,36 +251,133 @@ export function MobileProjectManagement({ onBack, onNavigateToView }: MobileProj
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
         </div>
+        {canManageMembers() && (
+          <button
+            onClick={() => setActiveView('invite')}
+            className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <UserPlus className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
-      <div className="space-y-3">
-        {filteredMembers.map((member) => (
-          <div key={member.id} className="bg-white border border-gray-200 rounded-xl p-4">
-            <div className="flex items-center gap-3">
-              <div className="text-2xl">{member.avatar}</div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-900">{member.name}</h4>
-                <p className="text-sm text-gray-600">{member.role}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Mail className="h-3 w-3 text-gray-400" />
-                  <span className="text-xs text-gray-500">{member.email}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <Calendar className="h-3 w-3 text-gray-400" />
-                  <span className="text-xs text-gray-500">参加日: {member.joinedAt}</span>
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-500">読み込み中...</p>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-3">
+            {filteredMembers.map((member) => (
+              <div key={member.id} className="bg-white border border-gray-200 rounded-xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">👤</div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-gray-900">
+                        {member.user?.user_metadata?.name || member.user?.email || 'Unknown User'}
+                      </h4>
+                      {getRoleIcon(member.role)}
+                    </div>
+                    <p className="text-sm text-gray-600">{getRoleLabel(member.role)}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Mail className="h-3 w-3 text-gray-400" />
+                      <span className="text-xs text-gray-500">{member.user?.email}</span>
+                    </div>
+                  </div>
+                  {canManageMembers() && !isCurrentUser(member.id) && member.role !== 'owner' && (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={member.role}
+                        onChange={(e) => handleUpdateRole(member.id, e.target.value as 'admin' | 'member')}
+                        className="text-xs border border-gray-300 rounded px-2 py-1"
+                      >
+                        <option value="member">メンバー</option>
+                        <option value="admin">管理者</option>
+                      </select>
+                      <button
+                        onClick={() => handleRemoveMember(member.id)}
+                        className="p-1 text-red-600 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
+
+          {filteredMembers.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <Users className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+              <p>メンバーが見つかりません</p>
+            </div>
+          )}
+
+          {invitations.length > 0 && (
+            <div className="mt-6">
+              <h4 className="font-medium text-gray-900 mb-3">招待中 ({invitations.length}件)</h4>
+              <div className="space-y-2">
+                {invitations.map((invitation) => (
+                  <div key={invitation.id} className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium text-yellow-900">{invitation.email}</p>
+                        <p className="text-sm text-yellow-700">{getRoleLabel(invitation.role)}</p>
+                      </div>
+                      <span className="text-xs text-yellow-600">招待中</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+
+  const renderInviteView = () => (
+    <div className="space-y-4">
+      <div className="bg-blue-50 rounded-xl p-4">
+        <h3 className="font-bold text-blue-900 mb-2">メンバーを招待</h3>
+        <p className="text-blue-800 text-sm">メールアドレスと権限を設定してメンバーを招待してください</p>
       </div>
 
-      {filteredMembers.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <Users className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-          <p>メンバーが見つかりません</p>
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">メールアドレス</label>
+          <input
+            type="email"
+            placeholder="招待するメンバーのメールアドレス"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
         </div>
-      )}
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">権限</label>
+          <select
+            value={inviteRole}
+            onChange={(e) => setInviteRole(e.target.value as 'admin' | 'member')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="member">メンバー</option>
+            <option value="admin">管理者</option>
+          </select>
+        </div>
+
+        <button 
+          onClick={handleInviteMember}
+          disabled={!inviteEmail.trim() || inviting}
+          className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50"
+        >
+          {inviting ? '招待中...' : '招待を送信'}
+        </button>
+      </div>
     </div>
   );
 
@@ -213,7 +385,7 @@ export function MobileProjectManagement({ onBack, onNavigateToView }: MobileProj
     <div className="space-y-4">
       <div className="bg-green-50 rounded-xl p-4">
         <h3 className="font-bold text-green-900 mb-2">新しいプロジェクトを作成</h3>
-        <p className="text-green-800 text-sm">プロジェクト名、説明、メンバーを設定してください</p>
+        <p className="text-green-800 text-sm">プロジェクト名と説明を入力してください</p>
       </div>
 
       <div className="space-y-4">
@@ -222,6 +394,8 @@ export function MobileProjectManagement({ onBack, onNavigateToView }: MobileProj
           <input
             type="text"
             placeholder="プロジェクト名を入力"
+            value={newProjectName}
+            onChange={(e) => setNewProjectName(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
           />
         </div>
@@ -231,29 +405,17 @@ export function MobileProjectManagement({ onBack, onNavigateToView }: MobileProj
           <textarea
             placeholder="プロジェクトの説明を入力"
             rows={3}
+            value={newProjectDescription}
+            onChange={(e) => setNewProjectDescription(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">メンバーを追加</label>
-          <div className="space-y-2">
-            {mockMembers.slice(0, 3).map((member) => (
-              <label key={member.id} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
-                <input type="checkbox" className="rounded text-green-600 focus:ring-green-500" />
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{member.avatar}</span>
-                  <div>
-                    <p className="font-medium text-sm">{member.name}</p>
-                    <p className="text-xs text-gray-500">{member.role}</p>
-                  </div>
-                </div>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <button className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors duration-200">
+        <button 
+          onClick={handleCreateProject}
+          disabled={!newProjectName.trim()}
+          className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors duration-200 disabled:opacity-50"
+        >
           プロジェクトを作成
         </button>
       </div>
@@ -279,11 +441,12 @@ export function MobileProjectManagement({ onBack, onNavigateToView }: MobileProj
         {filteredProjects.map((project) => (
           <button
             key={project.id}
-            onClick={() => {
-              // プロジェクト切り替え処理
-              alert(`プロジェクト「${project.name}」に切り替えました`);
-            }}
-            className="w-full text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-yellow-300 hover:bg-yellow-50 transition-all duration-200"
+            onClick={() => handleProjectSelect(project)}
+            className={`w-full text-left bg-white border rounded-xl p-4 transition-all duration-200 ${
+              currentProject?.id === project.id
+                ? 'border-yellow-300 bg-yellow-50'
+                : 'border-gray-200 hover:border-yellow-300 hover:bg-yellow-50'
+            }`}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -292,17 +455,19 @@ export function MobileProjectManagement({ onBack, onNavigateToView }: MobileProj
                 <div className="flex items-center gap-4 mt-2">
                   <div className="flex items-center gap-1">
                     <Users className="h-3 w-3 text-gray-400" />
-                    <span className="text-xs text-gray-500">{project.memberCount}名</span>
+                    <span className="text-xs text-gray-500">{members.length}名</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3 text-gray-400" />
-                    <span className="text-xs text-gray-500">作成日: {project.createdAt}</span>
+                    <span className="text-xs text-gray-500">作成日: {new Date(project.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
-              <div className="text-yellow-600">
-                <Settings className="h-5 w-5" />
-              </div>
+              {currentProject?.id === project.id && (
+                <div className="text-yellow-600">
+                  <span className="text-sm font-medium">現在</span>
+                </div>
+              )}
             </div>
           </button>
         ))}
@@ -337,6 +502,7 @@ export function MobileProjectManagement({ onBack, onNavigateToView }: MobileProj
           <h1 className="text-lg font-bold text-gray-900">
             {activeView === 'main' ? 'プロジェクト管理' :
              activeView === 'members' ? 'メンバー一覧' :
+             activeView === 'invite' ? 'メンバー招待' :
              activeView === 'create' ? 'プロジェクト作成' :
              'プロジェクト切り替え'}
           </h1>
@@ -347,6 +513,7 @@ export function MobileProjectManagement({ onBack, onNavigateToView }: MobileProj
       <div className="p-4">
         {activeView === 'main' && renderMainView()}
         {activeView === 'members' && renderMembersView()}
+        {activeView === 'invite' && renderInviteView()}
         {activeView === 'create' && renderCreateView()}
         {activeView === 'switch' && renderSwitchView()}
       </div>
