@@ -892,223 +892,7 @@ function MobileProjectManagement({ isOpen, onClose }) {
   );
 }
 
-// 設定画面コンポーネント
-function MobileSettings() {
-  const { user, signOut } = useAuth();
-  const { currentProject } = useProject();
-  const { phases, tasks, deliverables } = useProjectData();
-  const [notification, setNotification] = useState<Notification | null>(null);
 
-  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setNotification({ message, type });
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      showNotification('ログアウトしました', 'success');
-    } catch (error) {
-      showNotification('ログアウトに失敗しました', 'error');
-    }
-  };
-
-  const handleExportData = () => {
-    try {
-      if (!currentProject) {
-        showNotification('プロジェクトが選択されていません', 'error');
-        return;
-      }
-
-      // プロジェクトデータを準備
-      const exportData = {
-        project: currentProject,
-        phases: phases,
-        tasks: tasks,
-        deliverables: deliverables,
-        exportDate: new Date().toISOString(),
-        version: '1.0.0'
-      };
-
-      // JSONファイルとしてダウンロード
-      const dataStr = JSON.stringify(exportData, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${currentProject.name}_export_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      showNotification('データをエクスポートしました', 'success');
-    } catch (error) {
-      console.error('エクスポートエラー:', error);
-      showNotification('データのエクスポートに失敗しました', 'error');
-    }
-  };
-
-  const handleBackupData = () => {
-    try {
-      if (!currentProject) {
-        showNotification('プロジェクトが選択されていません', 'error');
-        return;
-      }
-
-      // バックアップデータを準備（エクスポートと同様）
-      const backupData = {
-        project: currentProject,
-        phases: phases,
-        tasks: tasks,
-        deliverables: deliverables,
-        backupDate: new Date().toISOString(),
-        version: '1.0.0',
-        type: 'backup'
-      };
-
-      // JSONファイルとしてダウンロード
-      const dataStr = JSON.stringify(backupData, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${currentProject.name}_backup_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      showNotification('データをバックアップしました', 'success');
-    } catch (error) {
-      console.error('バックアップエラー:', error);
-      showNotification('データのバックアップに失敗しました', 'error');
-    }
-  };
-
-  const handleImportData = () => {
-    // 将来的にインポート機能を実装
-    showNotification('データインポート機能は準備中です', 'info');
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* 通知 */}
-      {notification && (
-        <MobileNotification
-          message={notification.message}
-          type={notification.type}
-          onClose={() => setNotification(null)}
-        />
-      )}
-
-      {/* ユーザー情報 */}
-      <div className="bg-white rounded-xl p-4">
-        <h3 className="text-lg font-semibold mb-4">ユーザー情報</h3>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-            <User className="h-5 w-5 text-gray-600" />
-            <div>
-              <div className="font-medium text-gray-900">{user?.email}</div>
-              <div className="text-sm text-gray-500">システム設計アシスタント</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* プロジェクト情報 */}
-      {currentProject && (
-        <div className="bg-white rounded-xl p-4">
-          <h3 className="text-lg font-semibold mb-4">プロジェクト情報</h3>
-          <div className="space-y-3">
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <div className="font-medium text-blue-900">{currentProject.name}</div>
-              {currentProject.description && (
-                <div className="text-sm text-blue-700 mt-1">{currentProject.description}</div>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div className="text-center p-2 bg-gray-50 rounded">
-                <div className="font-bold text-gray-900">{phases.length}</div>
-                <div className="text-gray-500">フェーズ</div>
-              </div>
-              <div className="text-center p-2 bg-gray-50 rounded">
-                <div className="font-bold text-gray-900">{tasks.length}</div>
-                <div className="text-gray-500">タスク</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* データ管理 */}
-      <div className="bg-white rounded-xl p-4">
-        <h3 className="text-lg font-semibold mb-4">データ管理</h3>
-        <div className="space-y-3">
-          <button
-            onClick={handleExportData}
-            className="w-full flex items-center gap-3 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-          >
-            <Download className="h-5 w-5 text-blue-600" />
-            <span className="text-left text-blue-700">データをエクスポート</span>
-          </button>
-
-          <button
-            onClick={handleBackupData}
-            className="w-full flex items-center gap-3 p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-          >
-            <FileText className="h-5 w-5 text-green-600" />
-            <span className="text-left text-green-700">データをバックアップ</span>
-          </button>
-
-          <button
-            onClick={handleImportData}
-            className="w-full flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <Upload className="h-5 w-5 text-gray-600" />
-            <span className="text-left">データをインポート</span>
-          </button>
-        </div>
-      </div>
-
-      {/* アカウント管理 */}
-      <div className="bg-white rounded-xl p-4">
-        <h3 className="text-lg font-semibold mb-4">アカウント管理</h3>
-        <div className="space-y-3">
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 p-3 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-red-700"
-          >
-            <LogOut className="h-5 w-5" />
-            <span className="text-left">ログアウト</span>
-          </button>
-        </div>
-      </div>
-
-      {/* アプリ情報 */}
-      <div className="bg-white rounded-xl p-4">
-        <h3 className="text-lg font-semibold mb-4">アプリ情報</h3>
-        <div className="space-y-3 text-sm text-gray-600">
-          <div className="flex justify-between">
-            <span>バージョン</span>
-            <span>1.0.0</span>
-          </div>
-          <div className="flex justify-between">
-            <span>開発者</span>
-            <span>システム設計アシスタント</span>
-          </div>
-          <div className="flex justify-between">
-            <span>最終更新</span>
-            <span>2024年12月</span>
-          </div>
-          <div className="flex justify-between">
-            <span>データベース</span>
-            <span>Supabase</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // 統一されたモーダルコンポーネント（アニメーション付き）
 function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
@@ -1216,7 +1000,6 @@ function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
     { id: 'guide', label: '基本ガイド', icon: <Target className="h-5 w-5" />, color: 'text-purple-600' },
     { id: 'documents', label: 'ドキュメント管理', icon: <Layers className="h-5 w-5" />, color: 'text-orange-600' },
     { id: 'deliverables', label: '成果物チェック', icon: <CheckCircle className="h-5 w-5" />, color: 'text-red-600' },
-    { id: 'settings', label: '設定', icon: <User className="h-5 w-5" />, color: 'text-gray-600' },
   ];
 
   if (!isOpen) return null;
@@ -1258,8 +1041,7 @@ function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
              activeSection === 'templates' ? 'テンプレート' :
              activeSection === 'guide' ? '基本ガイド' :
              activeSection === 'documents' ? 'ドキュメント管理' :
-             activeSection === 'deliverables' ? '成果物チェック' :
-             '設定'}
+             '成果物チェック'}
           </h2>
           <button 
             onClick={onClose}
@@ -1400,59 +1182,7 @@ function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
             </div>
           )}
 
-          {activeSection === 'settings' && (
-            <div className="space-y-4">
-              {/* ユーザー情報 */}
-              <div className="bg-gray-50 rounded-xl p-4">
-                <h3 className="font-bold text-gray-900 mb-2">ユーザー情報</h3>
-                <p className="text-gray-600">{user?.email || '未ログイン'}</p>
-              </div>
 
-              {/* プロジェクト情報 */}
-              <div className="bg-blue-50 rounded-xl p-4">
-                <h3 className="font-bold text-blue-900 mb-2">プロジェクト情報</h3>
-                <p className="text-blue-800">{currentProject?.name || 'プロジェクトが選択されていません'}</p>
-              </div>
-
-              {/* データ管理 */}
-              <div className="space-y-3">
-                <button 
-                  onClick={handleExportData}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200"
-                >
-                  <Download className="h-5 w-5 text-green-600" />
-                  <span className="font-medium">データエクスポート</span>
-                </button>
-                
-                <button 
-                  onClick={handleBackupData}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
-                >
-                  <Upload className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium">バックアップ作成</span>
-                </button>
-                
-                <button 
-                  onClick={handleImportData}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition-all duration-200"
-                >
-                  <Upload className="h-5 w-5 text-purple-600" />
-                  <span className="font-medium">データインポート</span>
-                </button>
-              </div>
-
-              {/* アカウント管理 */}
-              <div className="pt-4 border-t border-gray-200">
-                <button 
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all duration-200"
-                >
-                  <LogOut className="h-5 w-5 text-red-600" />
-                  <span className="font-medium">ログアウト</span>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* 戻るボタン（メイン以外の画面で表示） */}
@@ -1475,7 +1205,7 @@ function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
 export default function MobileApp() {
   const [activePhase, setActivePhase] = useState<string | null>(null);
   const [unifiedModalOpen, setUnifiedModalOpen] = useState(false);
-  const [activeView, setActiveView] = useState('phase'); // 'phase' | 'templates' | 'guide' | 'documents' | 'settings'
+  const [activeView, setActiveView] = useState('phase'); // 'phase' | 'templates' | 'guide' | 'documents'
   const [notification, setNotification] = useState<Notification | null>(null);
   
   const { currentProject } = useProject();
