@@ -380,6 +380,12 @@ function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
     { id: 'deliverables', label: '成果物チェック', icon: <CheckCircle className="h-5 w-5" />, color: 'text-red-600' },
   ];
 
+  const projectSubItems = [
+    { id: 'project-members', label: 'メンバー一覧', icon: <Users className="h-5 w-5" />, color: 'text-blue-600' },
+    { id: 'create-project', label: 'プロジェクト作成', icon: <Plus className="h-5 w-5" />, color: 'text-green-600' },
+    { id: 'switch-project', label: 'プロジェクト切り替え', icon: <Settings className="h-5 w-5" />, color: 'text-yellow-600' },
+  ];
+
   if (!isOpen) return null;
 
   return (
@@ -416,6 +422,9 @@ function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
           <h2 className="text-xl font-bold text-gray-900">
             {activeSection === 'main' ? 'メニュー' : 
              activeSection === 'project' ? 'プロジェクト管理' :
+             activeSection === 'project-members' ? 'メンバー一覧' :
+             activeSection === 'create-project' ? 'プロジェクト作成' :
+             activeSection === 'switch-project' ? 'プロジェクト切り替え' :
              activeSection === 'templates' ? 'テンプレート' :
              activeSection === 'guide' ? '基本ガイド' :
              activeSection === 'documents' ? 'ドキュメント管理' :
@@ -436,7 +445,13 @@ function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
               {menuItems.map((item) => (
                 <button
                   key={item.id}
-                  onClick={() => setActiveSection(item.id)}
+                  onClick={() => {
+                    if (item.id === 'project') {
+                      handleNavigateToView('project-management');
+                    } else {
+                      handleNavigateToView(item.id);
+                    }
+                  }}
                   className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 transform hover:scale-[1.02] bg-white"
                 >
                   <div className={`p-2 rounded-lg bg-gray-50 ${item.color}`}>
@@ -459,107 +474,84 @@ function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
                 <p className="text-blue-800">{currentProject?.name || 'プロジェクトが選択されていません'}</p>
               </div>
 
-              {/* プロジェクト管理ボタン */}
+              {/* プロジェクト管理サブメニュー */}
               <div className="space-y-3">
-                <button 
-                  onClick={() => handleNavigateToView('project-members')}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
-                >
-                  <Users className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium">メンバー一覧</span>
-                </button>
-                
-                <button 
-                  onClick={() => handleNavigateToView('create-project')}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200"
-                >
-                  <Plus className="h-5 w-5 text-green-600" />
-                  <span className="font-medium">プロジェクト作成</span>
-                </button>
-                
-                <button 
-                  onClick={() => handleNavigateToView('switch-project')}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50 transition-all duration-200"
-                >
-                  <Settings className="h-5 w-5 text-yellow-600" />
-                  <span className="font-medium">プロジェクト切り替え</span>
-                </button>
+                {projectSubItems.map((item) => (
+                  <button 
+                    key={item.id}
+                    onClick={() => setActiveSection(item.id)}
+                    className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200 bg-white"
+                  >
+                    <div className={`p-2 rounded-lg bg-gray-50 ${item.color}`}>
+                      {item.icon}
+                    </div>
+                    <span className="font-medium text-gray-900">{item.label}</span>
+                    <div className="ml-auto">
+                      <span className="text-gray-400">›</span>
+                    </div>
+                  </button>
+                ))}
                 
                 <button 
                   onClick={confirmDeleteProject}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all duration-200"
+                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all duration-200 bg-white"
                 >
-                  <Trash2 className="h-5 w-5 text-red-600" />
-                  <span className="font-medium">プロジェクト削除</span>
+                  <div className="p-2 rounded-lg bg-gray-50 text-red-600">
+                    <Trash2 className="h-5 w-5" />
+                  </div>
+                  <span className="font-medium text-gray-900">プロジェクト削除</span>
                 </button>
               </div>
             </div>
           )}
 
-          {activeSection === 'templates' && (
+          {activeSection === 'project-members' && (
             <div className="space-y-4">
               <div className="text-center py-8">
-                <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-bold text-gray-900 mb-2">テンプレート</h3>
-                <p className="text-gray-600">システム設計に必要なテンプレートをダウンロードできます</p>
+                <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">メンバー一覧</h3>
+                <p className="text-gray-600">プロジェクトのメンバーを管理できます</p>
               </div>
               <button 
-                onClick={() => handleNavigateToView('templates')}
+                onClick={() => handleNavigateToView('project-members')}
+                className="w-full p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200"
+              >
+                メンバー一覧を表示
+              </button>
+            </div>
+          )}
+
+          {activeSection === 'create-project' && (
+            <div className="space-y-4">
+              <div className="text-center py-8">
+                <Plus className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">プロジェクト作成</h3>
+                <p className="text-gray-600">新しいプロジェクトを作成できます</p>
+              </div>
+              <button 
+                onClick={() => handleNavigateToView('create-project')}
                 className="w-full p-4 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors duration-200"
               >
-                テンプレート一覧を表示
+                プロジェクト作成画面を表示
               </button>
             </div>
           )}
 
-          {activeSection === 'guide' && (
+          {activeSection === 'switch-project' && (
             <div className="space-y-4">
               <div className="text-center py-8">
-                <Target className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-bold text-gray-900 mb-2">基本ガイド</h3>
-                <p className="text-gray-600">システム設計の基本手順を確認できます</p>
+                <Settings className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">プロジェクト切り替え</h3>
+                <p className="text-gray-600">別のプロジェクトに切り替えることができます</p>
               </div>
               <button 
-                onClick={() => handleNavigateToView('guide')}
-                className="w-full p-4 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors duration-200"
+                onClick={() => handleNavigateToView('switch-project')}
+                className="w-full p-4 bg-yellow-600 text-white rounded-xl hover:bg-yellow-700 transition-colors duration-200"
               >
-                ガイドを表示
+                プロジェクト切り替え画面を表示
               </button>
             </div>
           )}
-
-          {activeSection === 'documents' && (
-            <div className="space-y-4">
-              <div className="text-center py-8">
-                <Layers className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-bold text-gray-900 mb-2">ドキュメント管理</h3>
-                <p className="text-gray-600">プロジェクトのドキュメントを管理できます</p>
-              </div>
-              <button 
-                onClick={() => handleNavigateToView('documents')}
-                className="w-full p-4 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors duration-200"
-              >
-                ドキュメント一覧を表示
-              </button>
-            </div>
-          )}
-
-          {activeSection === 'deliverables' && (
-            <div className="space-y-4">
-              <div className="text-center py-8">
-                <CheckCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-bold text-gray-900 mb-2">成果物チェック</h3>
-                <p className="text-gray-600">全フェーズの成果物を一覧で確認できます</p>
-              </div>
-              <button 
-                onClick={() => handleNavigateToView('deliverables-checklist')}
-                className="w-full p-4 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors duration-200"
-              >
-                成果物チェックリストを表示
-              </button>
-            </div>
-          )}
-
 
         </div>
 
@@ -567,7 +559,13 @@ function MobileUnifiedModal({ isOpen, onClose, onNavigateToView }) {
         {activeSection !== 'main' && (
           <div className="p-6 border-t border-gray-200">
             <button 
-              onClick={() => setActiveSection('main')}
+              onClick={() => {
+                if (activeSection === 'project-members' || activeSection === 'create-project' || activeSection === 'switch-project') {
+                  setActiveSection('project');
+                } else {
+                  setActiveSection('main');
+                }
+              }}
               className="w-full flex items-center justify-center gap-2 p-3 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-200"
             >
               <span className="text-lg">‹</span>
@@ -792,26 +790,29 @@ export default function MobileApp() {
             onBack={() => setActiveView('phase')}
           />
         )}
+        {activeView === "project-management" && (
+          <MobileProjectManagement 
+            onBack={() => setActiveView('phase')} 
+            onNavigateToView={(view) => setActiveView(view as any)}
+          />
+        )}
         {activeView === "project-members" && (
-          <div className="text-center py-8">
-            <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-gray-900 mb-2">プロジェクトメンバー</h3>
-            <p className="text-gray-600">メンバー管理機能は今後実装予定です</p>
-          </div>
+          <MobileProjectManagement 
+            onBack={() => setActiveView('phase')} 
+            onNavigateToView={(view) => setActiveView(view as any)}
+          />
         )}
         {activeView === "create-project" && (
-          <div className="text-center py-8">
-            <Plus className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-gray-900 mb-2">プロジェクト作成</h3>
-            <p className="text-gray-600">プロジェクト作成機能は今後実装予定です</p>
-          </div>
+          <MobileProjectManagement 
+            onBack={() => setActiveView('phase')} 
+            onNavigateToView={(view) => setActiveView(view as any)}
+          />
         )}
         {activeView === "switch-project" && (
-          <div className="text-center py-8">
-            <Settings className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-bold text-gray-900 mb-2">プロジェクト切り替え</h3>
-            <p className="text-gray-600">プロジェクト切り替え機能は今後実装予定です</p>
-          </div>
+          <MobileProjectManagement 
+            onBack={() => setActiveView('phase')} 
+            onNavigateToView={(view) => setActiveView(view as any)}
+          />
         )}
       </main>
 

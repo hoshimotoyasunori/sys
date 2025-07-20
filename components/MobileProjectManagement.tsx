@@ -1,309 +1,355 @@
 import React, { useState } from 'react';
-import { 
-  Users, 
-  Plus, 
-  Settings, 
-  Trash2, 
-  User, 
-  LogOut, 
-  ArrowLeft,
-  CheckCircle2,
-  AlertCircle
-} from 'lucide-react';
-import { useProject } from '../contexts/ProjectContext';
-import { useAuth } from '../contexts/AuthContext';
+import { Users, Plus, Settings, Trash2, LogOut, User, ArrowLeft, Search, Mail, Phone, Calendar } from 'lucide-react';
 
 interface MobileProjectManagementProps {
   onBack: () => void;
   onNavigateToView: (view: string) => void;
 }
 
-interface Notification {
-  message: string;
-  type: 'success' | 'error' | 'info';
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  createdAt: string;
+  memberCount: number;
+}
+
+interface Member {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar: string;
+  joinedAt: string;
 }
 
 export function MobileProjectManagement({ onBack, onNavigateToView }: MobileProjectManagementProps) {
-  const { projects, currentProject, selectProject, deleteProject, createProject } = useProject();
-  const { signOut, user } = useAuth();
-  const [showCreateProject, setShowCreateProject] = useState(false);
-  const [showDeleteProject, setShowDeleteProject] = useState(false);
-  const [showProjectSwitch, setShowProjectSwitch] = useState(false);
-  const [notification, setNotification] = useState<Notification | null>(null);
-  const [newProjectName, setNewProjectName] = useState('');
-  const [newProjectDescription, setNewProjectDescription] = useState('');
+  const [activeView, setActiveView] = useState<'main' | 'members' | 'create' | 'switch'>('main');
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const showNotification = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    setNotification({ message, type });
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      showNotification('ログアウトしました', 'success');
-    } catch (error) {
-      showNotification('ログアウトに失敗しました', 'error');
+  // モックデータ
+  const mockMembers: Member[] = [
+    {
+      id: '1',
+      name: '田中太郎',
+      email: 'tanaka@example.com',
+      role: 'プロジェクトマネージャー',
+      avatar: '👨‍💼',
+      joinedAt: '2024-01-15'
+    },
+    {
+      id: '2',
+      name: '佐藤花子',
+      email: 'sato@example.com',
+      role: 'システムエンジニア',
+      avatar: '👩‍💻',
+      joinedAt: '2024-02-01'
+    },
+    {
+      id: '3',
+      name: '鈴木一郎',
+      email: 'suzuki@example.com',
+      role: 'UI/UXデザイナー',
+      avatar: '👨‍🎨',
+      joinedAt: '2024-02-10'
+    },
+    {
+      id: '4',
+      name: '高橋美咲',
+      email: 'takahashi@example.com',
+      role: 'テスター',
+      avatar: '👩‍🔬',
+      joinedAt: '2024-03-01'
     }
-  };
+  ];
 
-  const handleCreateProject = async () => {
-    if (!newProjectName.trim()) return;
-    
-    try {
-      const { error } = await createProject(newProjectName, newProjectDescription);
-      
-      if (error) {
-        showNotification(error.message, 'error');
-      } else {
-        showNotification('プロジェクトを作成しました', 'success');
-        setShowCreateProject(false);
-        setNewProjectName('');
-        setNewProjectDescription('');
-      }
-    } catch (error) {
-      showNotification('プロジェクトの作成に失敗しました', 'error');
+  const mockProjects: Project[] = [
+    {
+      id: '1',
+      name: 'ECサイト開発プロジェクト',
+      description: 'オンラインショッピングサイトの開発',
+      createdAt: '2024-01-01',
+      memberCount: 8
+    },
+    {
+      id: '2',
+      name: '社内管理システム',
+      description: '従業員管理と勤怠管理システム',
+      createdAt: '2024-02-01',
+      memberCount: 5
+    },
+    {
+      id: '3',
+      name: 'モバイルアプリ開発',
+      description: 'iOS/Androidアプリの開発',
+      createdAt: '2024-03-01',
+      memberCount: 6
     }
-  };
+  ];
 
-  const handleProjectSelect = (project) => {
-    selectProject(project);
-    showNotification(`${project.name}に切り替えました`, 'success');
-    setShowProjectSwitch(false);
-  };
+  const filteredMembers = mockMembers.filter(member =>
+    member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    member.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const confirmDeleteProject = async () => {
-    if (!currentProject) return;
-    
-    try {
-      const { error } = await deleteProject(currentProject.id);
-      if (!error) {
-        showNotification('プロジェクトを削除しました', 'success');
-        setShowDeleteProject(false);
-      } else {
-        showNotification('プロジェクトの削除に失敗しました', 'error');
-      }
-    } catch (error) {
-      showNotification('プロジェクトの削除に失敗しました', 'error');
-    }
-  };
+  const filteredProjects = mockProjects.filter(project =>
+    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    project.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  return (
-    <div className="space-y-6">
-      {/* ヘッダー */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onBack}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <h2 className="text-xl font-bold">プロジェクト管理</h2>
+  const renderMainView = () => (
+    <div className="space-y-4">
+      <div className="bg-blue-50 rounded-xl p-4">
+        <h3 className="font-bold text-blue-900 mb-2">現在のプロジェクト</h3>
+        <p className="text-blue-800">ECサイト開発プロジェクト</p>
+        <p className="text-sm text-blue-600 mt-1">メンバー数: 8名</p>
       </div>
 
-      {/* 現在のプロジェクト情報 */}
-      {currentProject && (
-        <div className="bg-blue-50 rounded-xl p-4">
-          <h3 className="font-bold text-blue-900 mb-2">現在のプロジェクト</h3>
-          <div className="text-blue-800">
-            <div className="font-medium">{currentProject.name}</div>
-            {currentProject.description && (
-              <div className="text-sm mt-1">{currentProject.description}</div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* プロジェクト管理オプション */}
       <div className="space-y-3">
         <button 
-          onClick={() => onNavigateToView('project-members')}
-          className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
+          onClick={() => setActiveView('members')}
+          className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 bg-white"
         >
-          <Users className="h-5 w-5 text-blue-600" />
-          <span className="font-medium">メンバー一覧</span>
+          <div className="p-2 rounded-lg bg-gray-50 text-blue-600">
+            <Users className="h-5 w-5" />
+          </div>
+          <span className="font-medium text-gray-900">メンバー一覧</span>
+          <div className="ml-auto">
+            <span className="text-gray-400">›</span>
+          </div>
         </button>
         
         <button 
-          onClick={() => setShowCreateProject(true)}
-          className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200"
+          onClick={() => setActiveView('create')}
+          className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all duration-200 bg-white"
         >
-          <Plus className="h-5 w-5 text-green-600" />
-          <span className="font-medium">プロジェクト作成</span>
+          <div className="p-2 rounded-lg bg-gray-50 text-green-600">
+            <Plus className="h-5 w-5" />
+          </div>
+          <span className="font-medium text-gray-900">プロジェクト作成</span>
+          <div className="ml-auto">
+            <span className="text-gray-400">›</span>
+          </div>
         </button>
         
         <button 
-          onClick={() => setShowProjectSwitch(true)}
-          className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50 transition-all duration-200"
+          onClick={() => setActiveView('switch')}
+          className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-yellow-300 hover:bg-yellow-50 transition-all duration-200 bg-white"
         >
-          <Settings className="h-5 w-5 text-yellow-600" />
-          <span className="font-medium">プロジェクト切り替え</span>
+          <div className="p-2 rounded-lg bg-gray-50 text-yellow-600">
+            <Settings className="h-5 w-5" />
+          </div>
+          <span className="font-medium text-gray-900">プロジェクト切り替え</span>
+          <div className="ml-auto">
+            <span className="text-gray-400">›</span>
+          </div>
         </button>
+        
+        <button 
+          onClick={() => {
+            if (window.confirm('プロジェクトを削除しますか？この操作は取り消せません。')) {
+              // 削除処理
+            }
+          }}
+          className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all duration-200 bg-white"
+        >
+          <div className="p-2 rounded-lg bg-gray-50 text-red-600">
+            <Trash2 className="h-5 w-5" />
+          </div>
+          <span className="font-medium text-gray-900">プロジェクト削除</span>
+        </button>
+      </div>
+    </div>
+  );
 
-        {currentProject && (
-          <button 
-            onClick={() => setShowDeleteProject(true)}
-            className="w-full flex items-center gap-3 p-4 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all duration-200"
+  const renderMembersView = () => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="メンバーを検索..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {filteredMembers.map((member) => (
+          <div key={member.id} className="bg-white border border-gray-200 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">{member.avatar}</div>
+              <div className="flex-1">
+                <h4 className="font-semibold text-gray-900">{member.name}</h4>
+                <p className="text-sm text-gray-600">{member.role}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Mail className="h-3 w-3 text-gray-400" />
+                  <span className="text-xs text-gray-500">{member.email}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <Calendar className="h-3 w-3 text-gray-400" />
+                  <span className="text-xs text-gray-500">参加日: {member.joinedAt}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filteredMembers.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <Users className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+          <p>メンバーが見つかりません</p>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderCreateView = () => (
+    <div className="space-y-4">
+      <div className="bg-green-50 rounded-xl p-4">
+        <h3 className="font-bold text-green-900 mb-2">新しいプロジェクトを作成</h3>
+        <p className="text-green-800 text-sm">プロジェクト名、説明、メンバーを設定してください</p>
+      </div>
+
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">プロジェクト名</label>
+          <input
+            type="text"
+            placeholder="プロジェクト名を入力"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">説明</label>
+          <textarea
+            placeholder="プロジェクトの説明を入力"
+            rows={3}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">メンバーを追加</label>
+          <div className="space-y-2">
+            {mockMembers.slice(0, 3).map((member) => (
+              <label key={member.id} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                <input type="checkbox" className="rounded text-green-600 focus:ring-green-500" />
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{member.avatar}</span>
+                  <div>
+                    <p className="font-medium text-sm">{member.name}</p>
+                    <p className="text-xs text-gray-500">{member.role}</p>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <button className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors duration-200">
+          プロジェクトを作成
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderSwitchView = () => (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="プロジェクトを検索..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {filteredProjects.map((project) => (
+          <button
+            key={project.id}
+            onClick={() => {
+              // プロジェクト切り替え処理
+              alert(`プロジェクト「${project.name}」に切り替えました`);
+            }}
+            className="w-full text-left bg-white border border-gray-200 rounded-xl p-4 hover:border-yellow-300 hover:bg-yellow-50 transition-all duration-200"
           >
-            <Trash2 className="h-5 w-5 text-red-600" />
-            <span className="font-medium">プロジェクト削除</span>
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-semibold text-gray-900">{project.name}</h4>
+                <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+                <div className="flex items-center gap-4 mt-2">
+                  <div className="flex items-center gap-1">
+                    <Users className="h-3 w-3 text-gray-400" />
+                    <span className="text-xs text-gray-500">{project.memberCount}名</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3 text-gray-400" />
+                    <span className="text-xs text-gray-500">作成日: {project.createdAt}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-yellow-600">
+                <Settings className="h-5 w-5" />
+              </div>
+            </div>
           </button>
-        )}
+        ))}
       </div>
 
-      {/* ユーザー情報 */}
-      <div className="mt-8 pt-6 border-t border-gray-200">
-        <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl mb-4">
-          <User className="h-5 w-5 text-gray-600" />
-          <div className="text-left">
-            <div className="font-medium text-gray-900">{user?.email}</div>
-            <div className="text-sm text-gray-500">システム設計アシスタント</div>
-          </div>
+      {filteredProjects.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <Settings className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+          <p>プロジェクトが見つかりません</p>
         </div>
+      )}
+    </div>
+  );
 
-        <button
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
-        >
-          <LogOut className="h-5 w-5 text-gray-600" />
-          <span className="text-left">ログアウト</span>
-        </button>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* ヘッダー */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              if (activeView === 'main') {
+                onBack();
+              } else {
+                setActiveView('main');
+              }
+            }}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+          >
+            <ArrowLeft className="h-5 w-5 text-gray-600" />
+          </button>
+          <h1 className="text-lg font-bold text-gray-900">
+            {activeView === 'main' ? 'プロジェクト管理' :
+             activeView === 'members' ? 'メンバー一覧' :
+             activeView === 'create' ? 'プロジェクト作成' :
+             'プロジェクト切り替え'}
+          </h1>
+        </div>
       </div>
 
-      {/* 通知 */}
-      {notification && (
-        <div className={`fixed top-4 left-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
-          notification.type === 'success' ? 'bg-green-50 border border-green-200' : 
-          notification.type === 'error' ? 'bg-red-50 border border-red-200' : 
-          'bg-blue-50 border border-blue-200'
-        }`}>
-          <div className="flex items-center gap-3">
-            {notification.type === 'success' && <CheckCircle2 className="h-5 w-5 text-green-600" />}
-            {notification.type === 'error' && <AlertCircle className="h-5 w-5 text-red-600" />}
-            <span className={`text-sm font-medium ${
-              notification.type === 'success' ? 'text-green-800' : 
-              notification.type === 'error' ? 'text-red-800' : 
-              'text-blue-800'
-            }`}>
-              {notification.message}
-            </span>
-            <button onClick={() => setNotification(null)} className="ml-auto text-gray-400 hover:text-gray-600">
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* プロジェクト作成ダイアログ */}
-      {showCreateProject && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm space-y-4">
-            <h3 className="font-bold text-lg">新規プロジェクト作成</h3>
-            
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">プロジェクト名 *</label>
-                <input
-                  type="text"
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  placeholder="プロジェクト名を入力"
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">説明</label>
-                <textarea
-                  value={newProjectDescription}
-                  onChange={(e) => setNewProjectDescription(e.target.value)}
-                  placeholder="プロジェクトの説明を入力"
-                  rows={3}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={handleCreateProject}
-                disabled={!newProjectName.trim()}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-medium disabled:opacity-50"
-              >
-                作成
-              </button>
-              <button
-                onClick={() => setShowCreateProject(false)}
-                className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-medium"
-              >
-                キャンセル
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* プロジェクト切り替えダイアログ */}
-      {showProjectSwitch && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm space-y-4">
-            <h3 className="font-bold text-lg">プロジェクト切り替え</h3>
-            
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {projects.map((project) => (
-                <button
-                  key={project.id}
-                  onClick={() => handleProjectSelect(project)}
-                  className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                    currentProject?.id === project.id
-                      ? 'border-blue-300 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="font-medium">{project.name}</div>
-                  {project.description && (
-                    <div className="text-sm text-gray-600 mt-1">{project.description}</div>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setShowProjectSwitch(false)}
-              className="w-full bg-gray-200 text-gray-800 py-3 rounded-lg font-medium"
-            >
-              キャンセル
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* プロジェクト削除確認ダイアログ */}
-      {showDeleteProject && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm space-y-4">
-            <h3 className="font-bold text-lg text-red-600">プロジェクト削除</h3>
-            <p className="text-gray-600">
-              プロジェクト「{currentProject?.name}」を削除しますか？<br />
-              この操作は取り消せません。
-            </p>
-            
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={confirmDeleteProject}
-                className="flex-1 bg-red-600 text-white py-3 rounded-lg font-medium"
-              >
-                削除
-              </button>
-              <button
-                onClick={() => setShowDeleteProject(false)}
-                className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-medium"
-              >
-                キャンセル
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* コンテンツ */}
+      <div className="p-4">
+        {activeView === 'main' && renderMainView()}
+        {activeView === 'members' && renderMembersView()}
+        {activeView === 'create' && renderCreateView()}
+        {activeView === 'switch' && renderSwitchView()}
+      </div>
     </div>
   );
 } 
