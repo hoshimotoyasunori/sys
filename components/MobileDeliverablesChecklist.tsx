@@ -25,10 +25,23 @@ export function MobileDeliverablesChecklist({ onBack }: MobileDeliverablesCheckl
   const [selectedType, setSelectedType] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedDeliverable, setSelectedDeliverable] = useState<Deliverable | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   // コンテキストからデータを取得
   const { currentProject } = useProject();
-  const { phases, deliverables, loading, updateDeliverable } = useProjectData();
+  const { phases, deliverables, loading, updateDeliverable, createMissingTasksAndDeliverables } = useProjectData();
+
+  // デバッグ用ログ
+  useEffect(() => {
+    console.log('🔍 MobileDeliverablesChecklist - データ状態:', {
+      currentProject: currentProject?.name,
+      phasesCount: phases.length,
+      deliverablesCount: deliverables.length,
+      loading,
+      phases: phases,
+      deliverables: deliverables
+    });
+  }, [currentProject, phases, deliverables, loading]);
 
   // フェーズごとに成果物をグループ化
   const deliverablesByPhase = phases.map(phase => ({
@@ -102,6 +115,22 @@ export function MobileDeliverablesChecklist({ onBack }: MobileDeliverablesCheckl
       }
     } catch (error) {
       alert('更新処理中にエラーが発生しました');
+    }
+  };
+
+  const handleCreateData = async () => {
+    if (!currentProject) return;
+    
+    setIsCreating(true);
+    try {
+      console.log('🚀 成果物データ作成開始');
+      await createMissingTasksAndDeliverables(currentProject.id);
+      console.log('✅ 成果物データ作成完了');
+    } catch (error) {
+      console.error('❌ 成果物データ作成エラー:', error);
+      alert('成果物データの作成に失敗しました');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -193,6 +222,15 @@ export function MobileDeliverablesChecklist({ onBack }: MobileDeliverablesCheckl
           <h1 className="text-lg font-bold text-gray-900">成果物チェックリスト</h1>
         </div>
       </div>
+
+      {/* デバッグ情報（開発時のみ表示） */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="p-4 bg-yellow-50 border-b border-yellow-200">
+          <p className="text-sm text-yellow-800">
+            デバッグ: プロジェクト={currentProject?.name}, フェーズ={phases.length}個, 成果物={deliverables.length}個, 読み込み中={loading ? 'はい' : 'いいえ'}
+          </p>
+        </div>
+      )}
 
       {/* 全体進捗 */}
       <div className="p-4">
@@ -329,6 +367,28 @@ export function MobileDeliverablesChecklist({ onBack }: MobileDeliverablesCheckl
               <div className="text-center py-8 text-gray-500">
                 <CheckCircle className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                 <p>成果物が見つかりません</p>
+                {deliverables.length === 0 && (
+                  <div className="mt-4">
+                    <p className="text-xs mb-2">成果物データが存在しません</p>
+                    <button
+                      onClick={handleCreateData}
+                      disabled={isCreating}
+                      className="flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isCreating ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          作成中...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="h-4 w-4" />
+                          成果物データを作成
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
