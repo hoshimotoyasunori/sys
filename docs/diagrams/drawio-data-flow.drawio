@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2025-07-20T05:42:00.000Z" agent="5.0" etag="xxx" version="22.1.16" type="device">
+  <diagram name="データフロー図" id="data-flow-diagram">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- タイトル -->
+        <mxCell id="title" value="システム設計アシスタント - 3端末間データ同期フロー" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="20" width="400" height="30" as="geometry" />
+        </mxCell>
+        
+        <!-- クライアント端末グループ -->
+        <mxCell id="client-group" value="クライアント端末" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#E3F2FD;strokeColor=#1976D2;" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="320" height="200" as="geometry" />
+        </mxCell>
+        
+        <!-- デスクトップアプリ -->
+        <mxCell id="desktop-group" value="デスクトップアプリ" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#E1F5FE;strokeColor=#01579B;" vertex="1" parent="client-group">
+          <mxGeometry x="10" y="30" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="electron-app" value="Electron App" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B3E5FC;strokeColor=#0277BD;" vertex="1" parent="desktop-group">
+          <mxGeometry x="10" y="26" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="desktop-cache" value="ローカルキャッシュ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#81D4FA;strokeColor=#0288D1;" vertex="1" parent="desktop-group">
+          <mxGeometry x="10" y="50" width="80" height="20" as="geometry" />
+        </mxCell>
+        
+        <!-- モバイルアプリ -->
+        <mxCell id="mobile-group" value="モバイルアプリ" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#E1F5FE;strokeColor=#01579B;" vertex="1" parent="client-group">
+          <mxGeometry x="110" y="30" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile-app" value="Mobile App" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B3E5FC;strokeColor=#0277BD;" vertex="1" parent="mobile-group">
+          <mxGeometry x="10" y="26" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="mobile-cache" value="ローカルキャッシュ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#81D4FA;strokeColor=#0288D1;" vertex="1" parent="mobile-group">
+          <mxGeometry x="10" y="50" width="80" height="20" as="geometry" />
+        </mxCell>
+        
+        <!-- ウェブアプリ -->
+        <mxCell id="web-group" value="ウェブアプリ" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#E1F5FE;strokeColor=#01579B;" vertex="1" parent="client-group">
+          <mxGeometry x="210" y="30" width="100" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="web-browser" value="Web Browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B3E5FC;strokeColor=#0277BD;" vertex="1" parent="web-group">
+          <mxGeometry x="10" y="26" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="service-worker" value="Service Worker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#81D4FA;strokeColor=#0288D1;" vertex="1" parent="web-group">
+          <mxGeometry x="10" y="50" width="80" height="20" as="geometry" />
+        </mxCell>
+        
+        <!-- ネットワーク層 -->
+        <mxCell id="network-group" value="ネットワーク層" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#E8F5E8;strokeColor=#388E3C;" vertex="1" parent="1">
+          <mxGeometry x="400" y="80" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="cdn" value="CDN&#xa;Vercel" style="ellipse;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#388E3C;" vertex="1" parent="network-group">
+          <mxGeometry x="20" y="30" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="api-gateway" value="API Gateway" style="ellipse;whiteSpace=wrap;html=1;fillColor=#A5D6A7;strokeColor=#388E3C;" vertex="1" parent="network-group">
+          <mxGeometry x="110" y="30" width="80" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- バックエンド -->
+        <mxCell id="backend-group" value="バックエンド" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#F3E5F5;strokeColor=#7B1FA2;" vertex="1" parent="1">
+          <mxGeometry x="640" y="80" width="320" height="200" as="geometry" />
+        </mxCell>
+        
+        <!-- Supabase -->
+        <mxCell id="supabase-group" value="Supabase" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#E1BEE7;strokeColor=#4A148C;" vertex="1" parent="backend-group">
+          <mxGeometry x="10" y="30" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="auth" value="認証サービス" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#CE93D8;strokeColor=#7B1FA2;" vertex="1" parent="supabase-group">
+          <mxGeometry x="10" y="26" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="database" value="PostgreSQL&#xa;データベース" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#BA68C8;strokeColor=#6A1B9A;" vertex="1" parent="supabase-group">
+          <mxGeometry x="100" y="20" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="realtime" value="リアルタイム&#xa;WebSocket" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#AB47BC;strokeColor=#6A1B9A;" vertex="1" parent="supabase-group">
+          <mxGeometry x="190" y="26" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="storage" value="ファイル&#xa;ストレージ" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9C27B0;strokeColor=#6A1B9A;" vertex="1" parent="supabase-group">
+          <mxGeometry x="10" y="50" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="functions" value="Edge Functions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#8E24AA;strokeColor=#6A1B9A;" vertex="1" parent="supabase-group">
+          <mxGeometry x="100" y="50" width="80" height="20" as="geometry" />
+        </mxCell>
+        
+        <!-- 外部サービス -->
+        <mxCell id="external-group" value="外部サービス" style="swimlane;fontStyle=0;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;fillColor=#FFF3E0;strokeColor=#E65100;" vertex="1" parent="backend-group">
+          <mxGeometry x="10" y="160" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="email" value="メールサービス&#xa;Resend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;" vertex="1" parent="external-group">
+          <mxGeometry x="10" y="26" width="80" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="notification" value="プッシュ通知&#xa;Firebase" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCC02;strokeColor=#E65100;" vertex="1" parent="external-group">
+          <mxGeometry x="100" y="26" width="80" height="20" as="geometry" />
+        </mxCell>
+        
+        <!-- データ同期 -->
+        <mxCell id="sync-group" value="データ同期" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;fillColor=#FFF8E1;strokeColor=#F57F17;" vertex="1" parent="1">
+          <mxGeometry x="400" y="200" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="sync" value="同期管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFECB3;strokeColor=#F57F17;" vertex="1" parent="sync-group">
+          <mxGeometry x="10" y="30" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="conflict" value="競合解決" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE082;strokeColor=#F57F17;" vertex="1" parent="sync-group">
+          <mxGeometry x="80" y="30" width="60" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="version" value="バージョン管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFD54F;strokeColor=#F57F17;" vertex="1" parent="sync-group">
+          <mxGeometry x="150" y="30" width="60" height="20" as="geometry" />
+        </mxCell>
+        
+        <!-- 接続線 -->
+        <!-- クライアントからネットワーク -->
+        <mxCell id="edge1" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1976D2;strokeWidth=2;" edge="1" parent="1" source="electron-app" target="cdn">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge2" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1976D2;strokeWidth=2;" edge="1" parent="1" source="mobile-app" target="cdn">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge3" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#1976D2;strokeWidth=2;" edge="1" parent="1" source="web-browser" target="cdn">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- ネットワークからバックエンド -->
+        <mxCell id="edge4" value="API" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#388E3C;strokeWidth=2;" edge="1" parent="1" source="api-gateway" target="auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- リアルタイム接続 -->
+        <mxCell id="edge5" value="WebSocket" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FF5722;strokeWidth=2;" edge="1" parent="1" source="realtime" target="electron-app">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge6" value="WebSocket" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FF5722;strokeWidth=2;" edge="1" parent="1" source="realtime" target="mobile-app">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge7" value="WebSocket" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#FF5722;strokeWidth=2;" edge="1" parent="1" source="realtime" target="web-browser">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <!-- データ同期 -->
+        <mxCell id="edge8" value="同期" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F57F17;strokeWidth=2;" edge="1" parent="1" source="desktop-cache" target="sync">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge9" value="同期" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F57F17;strokeWidth=2;" edge="1" parent="1" source="mobile-cache" target="sync">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge10" value="同期" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#F57F17;strokeWidth=2;" edge="1" parent="1" source="service-worker" target="sync">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile> 

@@ -32,5 +32,19 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    host: true, // Electronからのアクセスを許可
   },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs'],
+        },
+      },
+    },
+  },
+  base: './', // Electron用に相対パスを使用
 }); 
