@@ -413,6 +413,20 @@ export const MainApp: React.FC = () => {
   const [activePhase, setActivePhase] = useState<string | null>(null);
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(280);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(384);
+  const [maxRightWidth, setMaxRightWidth] = useState(800);
+
+  // 画面幅に応じて最大幅を調整
+  useEffect(() => {
+    const updateMaxWidth = () => {
+      const screenWidth = window.innerWidth;
+      const newMaxWidth = Math.min(screenWidth * 0.8, 1200); // 最大1200px、画面幅の80%
+      setMaxRightWidth(newMaxWidth);
+    };
+
+    updateMaxWidth();
+    window.addEventListener('resize', updateMaxWidth);
+    return () => window.removeEventListener('resize', updateMaxWidth);
+  }, []);
 
   // データを組み合わせて表示用のフェーズデータを作成
   const phasesWithData = phases.map(phase => ({
@@ -673,15 +687,15 @@ export const MainApp: React.FC = () => {
           </ResizableSidebar>
         }
         rightSidebar={
-          <ResizableSidebar
-            position="right"
-            defaultWidth={rightSidebarWidth}
-            minWidth={200}
-            maxWidth={600}
-            isOpen={rightSidebarOpen}
-            onToggle={() => setRightSidebarOpen(!rightSidebarOpen)}
-            onResize={handleRightSidebarResize}
-          >
+                      <ResizableSidebar 
+              position="right" 
+              defaultWidth={rightSidebarWidth} 
+              minWidth={200} 
+              maxWidth={maxRightWidth}
+              isOpen={rightSidebarOpen} 
+              onToggle={() => setRightSidebarOpen(!rightSidebarOpen)} 
+              onResize={handleRightSidebarResize}
+            >
             {rightSidebarOpen ? (
               <DocumentManager phaseId={currentPhase?.id || 'requirements-definition'} />
             ) : (
