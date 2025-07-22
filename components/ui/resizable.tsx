@@ -137,18 +137,40 @@ interface ResizableContainerProps {
   rightSidebar?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  onMainContentResize?: (width: number) => void;
 }
 
 export function ResizableContainer({
   leftSidebar,
   rightSidebar,
   children,
-  className
+  className,
+  onMainContentResize
 }: ResizableContainerProps) {
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
+  // メインコンテンツエリアの幅を監視
+  useEffect(() => {
+    if (!mainContentRef.current || !onMainContentResize) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        onMainContentResize(width);
+      }
+    });
+
+    resizeObserver.observe(mainContentRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [onMainContentResize]);
+
   return (
     <div className={cn('flex h-full', className)}>
       {leftSidebar}
-      <div className="flex-1 overflow-hidden">
+      <div ref={mainContentRef} className="flex-1 overflow-hidden">
         {children}
       </div>
       {rightSidebar}

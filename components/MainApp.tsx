@@ -411,9 +411,9 @@ export const MainApp: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [activePhase, setActivePhase] = useState<string | null>(null);
-  const [leftSidebarWidth, setLeftSidebarWidth] = useState(280);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(384);
   const [maxRightWidth, setMaxRightWidth] = useState(800);
+  const [mainContentWidth, setMainContentWidth] = useState(0);
 
   // 画面幅に応じて最大幅を調整
   useEffect(() => {
@@ -499,11 +499,7 @@ export const MainApp: React.FC = () => {
     setActivePhase(phase.id);
   };
 
-  // サイドバー幅の更新関数
-  const handleLeftSidebarResize = (width: number) => {
-    setLeftSidebarWidth(width);
-  };
-
+  // 右サイドバー幅の更新関数
   const handleRightSidebarResize = (width: number) => {
     setRightSidebarWidth(width);
   };
@@ -549,16 +545,16 @@ export const MainApp: React.FC = () => {
 
       {/* メイン部分 - リサイズ可能なサイドバー + コンテンツ */}
       <ResizableContainer
+        onMainContentResize={setMainContentWidth}
         leftSidebar={
-          <ResizableSidebar
-            position="left"
-            defaultWidth={leftSidebarWidth}
-            minWidth={200}
-            maxWidth={500}
-            isOpen={sidebarOpen}
-            onToggle={() => setSidebarOpen(!sidebarOpen)}
-            onResize={handleLeftSidebarResize}
-          >
+          <div className={`bg-white border-r border-gray-200 transition-all duration-300 flex flex-col shadow-sm ${sidebarOpen ? 'w-64' : 'w-20'}`}>
+            {/* 開閉ボタン */}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="absolute w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 z-20 -right-3 top-6"
+            >
+              {sidebarOpen ? '◀' : '▶'}
+            </button>
           
           <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
             {/* ガイド・チェックリスト・テンプレート */}
@@ -684,7 +680,7 @@ export const MainApp: React.FC = () => {
               </div>
             </div>
           )}
-          </ResizableSidebar>
+          </div>
         }
         rightSidebar={
                       <ResizableSidebar 
@@ -722,7 +718,7 @@ export const MainApp: React.FC = () => {
                 <div className="space-y-6">
                   <PhaseOverview phase={currentPhase} />
                   
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className={`grid gap-6 ${mainContentWidth >= 800 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     <TaskManager
                       phase={currentPhase}
                       onTaskUpdate={(taskId, completed) => 
