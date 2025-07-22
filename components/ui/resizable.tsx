@@ -1,56 +1,157 @@
 "use client";
 
-import * as React from "react";
-import { GripVerticalIcon } from "lucide-react";
-import * as ResizablePrimitive from "react-resizable-panels@2.1.7";
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { cn } from './utils';
 
-import { cn } from "./utils";
-
-function ResizablePanelGroup({
-  className,
-  ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelGroup>) {
-  return (
-    <ResizablePrimitive.PanelGroup
-      data-slot="resizable-panel-group"
-      className={cn(
-        "flex h-full w-full data-[panel-group-direction=vertical]:flex-col",
-        className,
-      )}
-      {...props}
-    />
-  );
+interface ResizableSidebarProps {
+  children: React.ReactNode;
+  minWidth?: number;
+  maxWidth?: number;
+  defaultWidth?: number;
+  position: 'left' | 'right';
+  onResize?: (width: number) => void;
+  className?: string;
+  isOpen?: boolean;
+  onToggle?: () => void;
 }
 
-function ResizablePanel({
-  ...props
-}: React.ComponentProps<typeof ResizablePrimitive.Panel>) {
-  return <ResizablePrimitive.Panel data-slot="resizable-panel" {...props} />;
-}
-
-function ResizableHandle({
-  withHandle,
+export function ResizableSidebar({
+  children,
+  minWidth = 200,
+  maxWidth = 600,
+  defaultWidth = 280,
+  position,
+  onResize,
   className,
-  ...props
-}: React.ComponentProps<typeof ResizablePrimitive.PanelResizeHandle> & {
-  withHandle?: boolean;
-}) {
+  isOpen = true,
+  onToggle
+}: ResizableSidebarProps) {
+  const [width, setWidth] = useState(defaultWidth);
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const startXRef = useRef<number>(0);
+  const startWidthRef = useRef<number>(0);
+
+  // リサイズ開始
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    startXRef.current = e.clientX;
+    startWidthRef.current = width;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [width]);
+
+  // リサイズ中
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+
+    const deltaX = position === 'left' 
+      ? e.clientX - startXRef.current 
+      : startXRef.current - e.clientX;
+    
+    const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidthRef.current + deltaX));
+    setWidth(newWidth);
+    onResize?.(newWidth);
+  }, [isResizing, position, minWidth, maxWidth, onResize]);
+
+  // リサイズ終了
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }, []);
+
+  // マウスイベントの設定
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp]);
+
+  // サイドバーが閉じている場合は最小幅で表示
+  const displayWidth = isOpen ? width : 64;
+
   return (
-    <ResizablePrimitive.PanelResizeHandle
-      data-slot="resizable-handle"
+    <div
+      ref={sidebarRef}
       className={cn(
-        "bg-border focus-visible:ring-ring relative flex w-px items-center justify-center after:absolute after:inset-y-0 after:left-1/2 after:w-1 after:-translate-x-1/2 focus-visible:ring-1 focus-visible:ring-offset-1 focus-visible:outline-hidden data-[panel-group-direction=vertical]:h-px data-[panel-group-direction=vertical]:w-full data-[panel-group-direction=vertical]:after:left-0 data-[panel-group-direction=vertical]:after:h-1 data-[panel-group-direction=vertical]:after:w-full data-[panel-group-direction=vertical]:after:-translate-y-1/2 data-[panel-group-direction=vertical]:after:translate-x-0 [&[data-panel-group-direction=vertical]>div]:rotate-90",
-        className,
+        'relative bg-white border-gray-200 transition-all duration-300 flex flex-col shadow-sm',
+        position === 'left' ? 'border-r' : 'border-l',
+        className
       )}
-      {...props}
+      style={{ width: displayWidth }}
     >
-      {withHandle && (
-        <div className="bg-border z-10 flex h-4 w-3 items-center justify-center rounded-xs border">
-          <GripVerticalIcon className="size-2.5" />
+      {/* リサイズハンドル */}
+      {isOpen && (
+        <div
+          className={cn(
+            'absolute top-0 bottom-0 w-2 cursor-col-resize hover:bg-blue-100 transition-colors duration-200 z-10 group',
+            position === 'left' ? '-right-1' : '-left-1'
+          )}
+          onMouseDown={handleMouseDown}
+        >
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="w-1 h-12 bg-gray-300 rounded-full group-hover:bg-blue-500 transition-colors duration-200 flex flex-col items-center justify-center gap-1">
+              <div className="w-0.5 h-1 bg-gray-400 rounded-full group-hover:bg-blue-300"></div>
+              <div className="w-0.5 h-1 bg-gray-400 rounded-full group-hover:bg-blue-300"></div>
+              <div className="w-0.5 h-1 bg-gray-400 rounded-full group-hover:bg-blue-300"></div>
+            </div>
+          </div>
         </div>
       )}
-    </ResizablePrimitive.PanelResizeHandle>
+
+      {/* 開閉ボタン */}
+      {onToggle && (
+        <button
+          onClick={onToggle}
+          className={cn(
+            'absolute w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 z-20',
+            position === 'left' ? '-right-3 top-6' : '-left-3 top-6'
+          )}
+        >
+          {position === 'left' 
+            ? (isOpen ? '◀' : '▶') 
+            : (isOpen ? '▶' : '◀')
+          }
+        </button>
+      )}
+
+      {/* コンテンツ */}
+      <div className="flex-1 overflow-hidden">
+        {children}
+      </div>
+    </div>
   );
 }
 
-export { ResizablePanelGroup, ResizablePanel, ResizableHandle };
+// リサイズ可能なコンテナコンポーネント
+interface ResizableContainerProps {
+  leftSidebar: React.ReactNode;
+  rightSidebar?: React.ReactNode;
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function ResizableContainer({
+  leftSidebar,
+  rightSidebar,
+  children,
+  className
+}: ResizableContainerProps) {
+  return (
+    <div className={cn('flex h-full', className)}>
+      {leftSidebar}
+      <div className="flex-1 overflow-hidden">
+        {children}
+      </div>
+      {rightSidebar}
+    </div>
+  );
+}

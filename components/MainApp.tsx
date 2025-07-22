@@ -38,6 +38,7 @@ import { useIsMobile } from './ui/use-mobile';
 import MobileApp from './MobileApp';
 import { useProject } from '../contexts/ProjectContext';
 import { useProjectData } from '../contexts/ProjectDataContext';
+import { ResizableSidebar, ResizableContainer } from './ui/resizable';
 
 export interface Task {
   id: string;
@@ -157,42 +158,42 @@ const initialPhases: Phase[] = [
         id: 'system-architecture',
         title: 'システム全体構成設計',
         description: 'アーキテクチャ設計を行い、システムの基盤を設計する',
-        completed: false,
+        status: 'todo',
         priority: 'high'
       },
       {
         id: 'database-design',
         title: 'データベース論理・物理設計',
         description: 'ER図の作成と正規化、インデックス設計を実施する',
-        completed: false,
+        status: 'todo',
         priority: 'high'
       },
       {
         id: 'function-overview',
         title: '機能概要設計',
         description: '各機能の入力、処理、出力の概要を設計する',
-        completed: false,
+        status: 'todo',
         priority: 'medium'
       },
       {
         id: 'external-interface',
         title: '外部インターフェース設計',
         description: '他システムとの連携仕様を設計する',
-        completed: false,
+        status: 'todo',
         priority: 'medium'
       },
       {
         id: 'screen-transition',
         title: '画面遷移設計',
         description: '画面間の遷移フローを設計する',
-        completed: false,
+        status: 'todo',
         priority: 'medium'
       },
       {
         id: 'non-functional',
         title: '非機能要件の詳細化',
         description: '性能、セキュリティ、可用性などの要件を詳細化する',
-        completed: false,
+        status: 'todo',
         priority: 'high'
       }
     ],
@@ -231,42 +232,42 @@ const initialPhases: Phase[] = [
         id: 'ui-design',
         title: 'ユーザーインターフェース設計',
         description: '画面レイアウト、操作フローを設計する',
-        completed: false,
+        status: 'todo',
         priority: 'high'
       },
       {
         id: 'ux-design',
         title: 'ユーザーエクスペリエンス設計',
         description: 'ユーザー体験の最適化を図る',
-        completed: false,
+        status: 'todo',
         priority: 'high'
       },
       {
         id: 'input-output-design',
         title: '入力・出力情報の詳細設計',
         description: 'データの入出力仕様を詳細に設計する',
-        completed: false,
+        status: 'todo',
         priority: 'medium'
       },
       {
         id: 'error-handling',
         title: 'エラーハンドリングの検討',
         description: 'エラー処理とユーザーへの通知方法を設計する',
-        completed: false,
+        status: 'todo',
         priority: 'medium'
       },
       {
         id: 'report-design',
         title: '帳票設計',
         description: '各種レポートの設計を行う',
-        completed: false,
+        status: 'todo',
         priority: 'low'
       },
       {
         id: 'test-plan-detail',
         title: 'テスト計画の詳細作成',
         description: '単体テスト、結合テスト、総合テストの範囲を詳細化する',
-        completed: false,
+        status: 'todo',
         priority: 'medium'
       }
     ],
@@ -323,42 +324,42 @@ const initialPhases: Phase[] = [
         id: 'dev-environment',
         title: '開発環境の構築',
         description: '開発に必要な環境をセットアップする',
-        completed: false,
+        status: 'todo',
         priority: 'high'
       },
       {
         id: 'tech-stack',
         title: '開発技術の最終決定',
         description: '開発言語、フレームワーク、ライブラリの最終決定とセットアップ',
-        completed: false,
+        status: 'todo',
         priority: 'high'
       },
       {
         id: 'version-control',
         title: 'バージョン管理システムの導入',
         description: 'Git等のバージョン管理システム導入とルール策定',
-        completed: false,
+        status: 'todo',
         priority: 'high'
       },
       {
         id: 'coding-standards',
         title: 'コーディング規約の策定',
         description: '開発チーム内のコーディング規約を策定する',
-        completed: false,
+        status: 'todo',
         priority: 'medium'
       },
       {
         id: 'schedule-detail',
         title: '開発スケジュールの詳細化',
         description: 'より詳細な開発スケジュールを作成する',
-        completed: false,
+        status: 'todo',
         priority: 'medium'
       },
       {
         id: 'project-management',
         title: '課題管理・進捗管理ツールの準備',
         description: 'プロジェクト管理ツールのセットアップ',
-        completed: false,
+        status: 'todo',
         priority: 'medium'
       }
     ],
@@ -410,6 +411,8 @@ export const MainApp: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
   const [activePhase, setActivePhase] = useState<string | null>(null);
+  const [leftSidebarWidth, setLeftSidebarWidth] = useState(280);
+  const [rightSidebarWidth, setRightSidebarWidth] = useState(384);
 
   // データを組み合わせて表示用のフェーズデータを作成
   const phasesWithData = phases.map(phase => ({
@@ -482,6 +485,15 @@ export const MainApp: React.FC = () => {
     setActivePhase(phase.id);
   };
 
+  // サイドバー幅の更新関数
+  const handleLeftSidebarResize = (width: number) => {
+    setLeftSidebarWidth(width);
+  };
+
+  const handleRightSidebarResize = (width: number) => {
+    setRightSidebarWidth(width);
+  };
+
   const handleCreateTasksAndDeliverables = async () => {
     if (!currentProject || !currentPhase) {
       console.error('❌ プロジェクトまたはフェーズが選択されていません');
@@ -521,17 +533,18 @@ export const MainApp: React.FC = () => {
         currentProject={currentProject}
       />
 
-      {/* メイン部分 - 左サイドバー + コンテンツ + 右サイドバー */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* 左サイドバー */}
-        <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 transition-all duration-300 flex flex-col relative shadow-sm`}>
-          {/* 左サイドバー開閉ボタン */}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="absolute -right-3 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 z-10"
+      {/* メイン部分 - リサイズ可能なサイドバー + コンテンツ */}
+      <ResizableContainer
+        leftSidebar={
+          <ResizableSidebar
+            position="left"
+            defaultWidth={leftSidebarWidth}
+            minWidth={200}
+            maxWidth={500}
+            isOpen={sidebarOpen}
+            onToggle={() => setSidebarOpen(!sidebarOpen)}
+            onResize={handleLeftSidebarResize}
           >
-            {sidebarOpen ? <ChevronLeft className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-          </button>
           
           <nav className="flex-1 p-4 space-y-6 overflow-y-auto">
             {/* ガイド・チェックリスト・テンプレート */}
@@ -585,9 +598,18 @@ export const MainApp: React.FC = () => {
               <div className="space-y-2">
                 {phasesWithData.map(phase => {
                   const IconComponent = phaseIcons[phase.title as keyof typeof phaseIcons] || phaseIcons['要件定義'];
-                  const phaseProgress = phase.tasks.length > 0 
-                    ? (phase.tasks.filter(task => task.status === 'completed').length / phase.tasks.length) * 100 
-                    : 0;
+                  
+                  // タスクと成果物の両方を考慮した進捗計算
+                  const completedTasks = phase.tasks.filter(task => task.status === 'completed').length;
+                  const totalTasks = phase.tasks.length;
+                  const completedDeliverables = phase.deliverables.filter(deliverable => deliverable.status === 'completed').length;
+                  const totalDeliverables = phase.deliverables.length;
+                  
+                  // タスクと成果物の合計数が0でない場合のみ進捗を計算
+                  const totalItems = totalTasks + totalDeliverables;
+                  const completedItems = completedTasks + completedDeliverables;
+                  const phaseProgress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
+                  
                   const isActive = currentView === 'phases' && activePhase === phase.id;
                   
                   return (
@@ -648,8 +670,30 @@ export const MainApp: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
-
+          </ResizableSidebar>
+        }
+        rightSidebar={
+          <ResizableSidebar
+            position="right"
+            defaultWidth={rightSidebarWidth}
+            minWidth={200}
+            maxWidth={600}
+            isOpen={rightSidebarOpen}
+            onToggle={() => setRightSidebarOpen(!rightSidebarOpen)}
+            onResize={handleRightSidebarResize}
+          >
+            {rightSidebarOpen ? (
+              <DocumentManager phaseId={currentPhase?.id || 'requirements-definition'} />
+            ) : (
+              <div className="flex flex-col items-center py-6">
+                <div className="p-3 bg-gray-100 rounded-lg">
+                  <FileText className="h-6 w-6 text-gray-600" />
+                </div>
+              </div>
+            )}
+          </ResizableSidebar>
+        }
+      >
         {/* メインコンテンツエリア */}
         <div className="flex-1 overflow-y-auto">
           <div className="p-6">
@@ -686,28 +730,7 @@ export const MainApp: React.FC = () => {
             )}
           </div>
         </div>
-
-        {/* 右サイドバー - ドキュメント管理 */}
-        <div className={`${rightSidebarOpen ? 'w-96' : 'w-16'} bg-white border-l border-gray-200 transition-all duration-300 flex flex-col relative shadow-sm`}>
-          {/* 右サイドバー開閉ボタン */}
-          <button
-            onClick={() => setRightSidebarOpen(!rightSidebarOpen)}
-            className="absolute -left-3 top-6 w-6 h-6 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200 z-10"
-          >
-            {rightSidebarOpen ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
-          </button>
-
-          {rightSidebarOpen ? (
-            <DocumentManager phaseId={currentPhase?.id || 'requirements-definition'} />
-          ) : (
-            <div className="flex flex-col items-center py-6">
-              <div className="p-3 bg-gray-100 rounded-lg">
-                <FileText className="h-6 w-6 text-gray-600" />
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      </ResizableContainer>
     </div>
   );
 }; 

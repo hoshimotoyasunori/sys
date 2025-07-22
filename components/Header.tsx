@@ -69,7 +69,11 @@ export function Header({
   
   const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
   const deliverableProgress = totalDeliverables > 0 ? (completedDeliverables / totalDeliverables) * 100 : 0;
-  const overallProgress = (taskProgress + deliverableProgress) / 2;
+  
+  // タスクと成果物の合計数に基づく全体進捗計算
+  const totalItems = totalTasks + totalDeliverables;
+  const completedItems = completedTasks + completedDeliverables;
+  const overallProgress = totalItems > 0 ? (completedItems / totalItems) * 100 : 0;
 
   const handleLogout = async () => {
     await signOut();

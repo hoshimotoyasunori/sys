@@ -331,32 +331,11 @@ sys/
 │   ├── config.toml                 # Supabase設定
 │   ├── seed.sql                    # 初期データ
 │   │
-│   ├── migrations/                 # データベースマイグレーション
-│   │   ├── 20250719000000_initial_schema.sql           # 初期スキーマ
-│   │   ├── 20250719000001_create_basic_tables.sql      # 基本テーブル作成
-│   │   ├── 20250719000002_fix_rls_policies.sql         # RLSポリシー修正
-│   │   ├── 20250719000003_simplify_rls_policies.sql    # RLSポリシー簡素化
-│   │   ├── 20250719000004_create_phases.sql            # フェーズテーブル作成
-│   │   ├── 20250719000005_fix_phases_to_4.sql          # フェーズを4つに修正
-│   │   ├── 20250719000006_add_initial_tasks_and_deliverables.sql # 初期タスク・成果物追加
-│   │   ├── 20250719000007_fix_tasks_and_deliverables_structure.sql # タスク・成果物構造修正
-│   │   ├── 20250719000008_fix_task_deliverable_schema.sql # タスク・成果物スキーマ修正
-│   │   ├── 20250719000009_final_schema_unification.sql # 最終スキーマ統一
-│   │   ├── 20250719000010_fix_trigger_function.sql     # トリガー関数修正
-│   │   ├── 20250719000011_fix_invitation_rls_policies.sql # 招待RLSポリシー修正
-│   │   ├── 20250719000012_fix_infinite_recursion.sql   # 無限再帰修正
-│   │   ├── 20250719000013_add_bypass_rls_function.sql  # RLSバイパス関数追加
-│   │   ├── 20250719000014_fix_all_rls_policies.sql     # 全RLSポリシー修正
-│   │   ├── 20250719000015_final_rls_fix.sql            # 最終RLS修正
-│   │   ├── 20250719000016_disable_rls_temporarily.sql  # RLS一時無効化
-│   │   ├── 20250719000017_remove_duplicate_data.sql    # 重複データ削除
-│   │   ├── 20250719000018_fix_trigger_condition.sql    # トリガー条件修正
-│   │   ├── 20250719000019_fix_task_order.sql           # タスク順序修正
-│   │   ├── 20250719000020_reenable_rls_with_policies.sql # RLS再有効化
-│   │   ├── 20250719000021_create_missing_tasks_and_deliverables.sql # 不足タスク・成果物作成
-│   │   ├── 20250719000022_force_create_tasks_and_deliverables.sql # 強制タスク・成果物作成
-│   │   ├── 20250719000023_fix_tasks_deliverables_schema.sql # タスク・成果物スキーマ修正
-│   │   └── 20250720000000_add_token_to_invitations.sql # 招待にトークン追加
+│   ├── migrations/                 # データベースマイグレーション（整理済み）
+│   │   ├── 20250719000000_initial_schema.sql           # 初期スキーマ（統合版）
+│   │   ├── 20250719000001_rls_policies.sql             # RLSポリシー設定（統合版）
+│   │   ├── 20250719000002_initial_data.sql             # 初期データ設定
+│   │   └── 20250719000003_invitation_enhancement.sql   # 招待機能拡張
 │   │
 │   └── functions/                  # Supabase Edge Functions
 │       └── send-email/             # メール送信機能
