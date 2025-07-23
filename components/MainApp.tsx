@@ -547,7 +547,7 @@ export const MainApp: React.FC = () => {
       <ResizableContainer
         onMainContentResize={setMainContentWidth}
         leftSidebar={
-          <div className={`bg-white border-r border-gray-200 transition-all duration-300 flex flex-col shadow-sm ${sidebarOpen ? 'w-64' : 'w-20'}`}>
+          <div className={`relative bg-white border-r border-gray-200 transition-all duration-300 flex flex-col shadow-sm ${sidebarOpen ? 'w-64' : 'w-20'}`}>
             {/* 開閉ボタン */}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
