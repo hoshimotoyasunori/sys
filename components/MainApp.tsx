@@ -27,7 +27,7 @@ import {
   Search
 } from 'lucide-react';
 import { Header } from './Header';
-import { PhaseOverview } from './PhaseOverview';
+
 import { TaskManager } from './TaskManager';
 import { DeliverableTracker } from './DeliverableTracker';
 import { DocumentManager } from './DocumentManager';
@@ -716,8 +716,6 @@ export const MainApp: React.FC = () => {
             ) : (
               currentPhase && (
                 <div className="space-y-6">
-                  <PhaseOverview phase={currentPhase} />
-                  
                   <div className={`grid gap-6 ${mainContentWidth >= 800 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     <TaskManager
                       phase={currentPhase}
