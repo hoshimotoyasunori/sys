@@ -168,9 +168,9 @@ export function ResizableContainer({
   }, [onMainContentResize]);
 
   return (
-    <div className={cn('flex h-full', className)}>
+    <div className={cn('flex h-full min-h-0', className)}>
       {leftSidebar}
-      <div ref={mainContentRef} className="flex-1 overflow-hidden">
+      <div ref={mainContentRef} className="flex-1 overflow-auto min-h-0">
         {children}
       </div>
       {rightSidebar}
