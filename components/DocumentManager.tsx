@@ -36,6 +36,7 @@ import {
   Archive,
   Clock,
 } from "lucide-react";
+import { Label } from "./ui/label";
 
 interface Document {
   id: string;
@@ -93,6 +94,28 @@ interface DocumentCardProps {
   onDownload: (doc: Document) => void;
 }
 
+// formatFileSize関数をDocumentCardコンポーネントの外に移動
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return (
+    parseFloat((bytes / Math.pow(k, i)).toFixed(2)) +
+    " " +
+    sizes[i]
+  );
+};
+
+const formatDateTimeShort = (date: Date) => {
+  return date.toLocaleString("ja-JP", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 function DocumentCard({ document: doc, onEdit, onDelete, onDownload }: DocumentCardProps) {
   const typeInfo = documentTypes[doc.type];
   
@@ -127,13 +150,13 @@ function DocumentCard({ document: doc, onEdit, onDelete, onDownload }: DocumentC
           {doc.description}
         </p>
       )}
-      
-      <div className="flex justify-end gap-2">
+
+      <div className="flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
           onClick={() => onDownload(doc)}
-          className="h-8 px-3 text-xs"
+          className="h-7 px-2 text-xs"
         >
           <Download className="h-3 w-3 mr-1" />
           ダウンロード
@@ -142,7 +165,7 @@ function DocumentCard({ document: doc, onEdit, onDelete, onDownload }: DocumentC
           variant="outline"
           size="sm"
           onClick={() => onEdit(doc)}
-          className="h-8 px-3 text-xs"
+          className="h-7 px-2 text-xs"
         >
           <Edit className="h-3 w-3 mr-1" />
           編集
@@ -151,7 +174,7 @@ function DocumentCard({ document: doc, onEdit, onDelete, onDownload }: DocumentC
           variant="outline"
           size="sm"
           onClick={() => onDelete(doc.id)}
-          className="h-8 px-3 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+          className="h-7 px-2 text-xs text-red-600 hover:text-red-700"
         >
           <Trash2 className="h-3 w-3 mr-1" />
           削除
@@ -184,51 +207,64 @@ export function DocumentManager({
   });
 
   const [newTag, setNewTag] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const handleFileUpload = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  // ファイル選択時の処理を変更
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    setSelectedFile(file);
+    
+    // ファイル名を自動設定
+    setNewDocument(prev => ({
+      ...prev,
+      name: file.name
+    }));
+  };
 
-    Array.from(files).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        const now = new Date();
-        const doc: Document = {
-          id:
-            Date.now().toString() +
-            Math.random().toString(36).substr(2, 9),
-          name: file.name,
-          type: newDocument.type,
-          size: file.size,
-          uploadDate: now,
-          updateDate: now,
-          author: "Current User",
-          content: content,
-          description: newDocument.description,
-          tags: newDocument.tags,
-          isLatest: newDocument.isLatest,
-        };
+  // ファイルアップロード処理を修正
+  const handleFileUpload = () => {
+    if (!selectedFile) return;
 
-        // 最新版の場合、同じ名前の他のドキュメントの最新版フラグを削除
-        if (newDocument.isLatest) {
-          setDocuments((prev) =>
-            prev.map((d) =>
-              d.name === file.name
-                ? { ...d, isLatest: false }
-                : d,
-            ),
-          );
-        }
-
-        setDocuments((prev) => [...prev, doc]);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      const now = new Date();
+      const doc: Document = {
+        id:
+          Date.now().toString() +
+          Math.random().toString(36).substr(2, 9),
+        name: selectedFile.name,
+        type: newDocument.type,
+        size: selectedFile.size,
+        uploadDate: now,
+        updateDate: now,
+        author: "Current User",
+        content: content,
+        description: newDocument.description,
+        tags: newDocument.tags,
+        isLatest: newDocument.isLatest,
       };
-      reader.readAsText(file);
-    });
+
+      // 最新版の場合、同じ名前の他のドキュメントの最新版フラグを削除
+      if (newDocument.isLatest) {
+        setDocuments((prev) =>
+          prev.map((d) =>
+            d.name === selectedFile.name
+              ? { ...d, isLatest: false }
+              : d,
+          ),
+        );
+      }
+
+      setDocuments((prev) => [...prev, doc]);
+    };
+    reader.readAsText(selectedFile);
 
     setIsUploadDialogOpen(false);
+    setSelectedFile(null);
     setNewDocument({
       name: "",
       type: "requirements-definition",
@@ -409,30 +445,9 @@ export function DocumentManager({
       );
     });
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (
-      parseFloat((bytes / Math.pow(k, i)).toFixed(2)) +
-      " " +
-      sizes[i]
-    );
-  };
-
   const formatDateTime = (date: Date) => {
     return date.toLocaleString("ja-JP", {
       year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const formatDateTimeShort = (date: Date) => {
-    return date.toLocaleString("ja-JP", {
       month: "2-digit",
       day: "2-digit",
       hour: "2-digit",
@@ -444,6 +459,7 @@ export function DocumentManager({
     (doc) => doc.isLatest,
   ).length;
 
+  // アップロードダイアログの内容を修正
   return (
     <div className="flex flex-col h-full">
       {/* ヘッダー */}
@@ -525,367 +541,106 @@ export function DocumentManager({
         open={isUploadDialogOpen}
         onOpenChange={setIsUploadDialogOpen}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl">
-              {editingDocument
-                ? "ドキュメント編集"
-                : "新しいドキュメント"}
-            </DialogTitle>
+            <DialogTitle>ドキュメントを追加</DialogTitle>
             <DialogDescription>
-              ファイルをアップロードするか、新規作成してください
+              新しいドキュメントをアップロードまたは作成します。
             </DialogDescription>
           </DialogHeader>
-
-          <Tabs defaultValue="create" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="create">新規作成</TabsTrigger>
-              <TabsTrigger
-                value="upload"
-                disabled={!!editingDocument}
-              >
-                ファイルアップロード
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="create" className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    ドキュメント名
-                  </label>
-                  <Input
-                    value={newDocument.name}
-                    onChange={(e) =>
-                      setNewDocument((prev) => ({
-                        ...prev,
-                        name: e.target.value,
-                      }))
-                    }
-                    placeholder="ドキュメント名を入力"
-                    className="rounded-xl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    種別
-                  </label>
-                  <select
-                    value={newDocument.type}
-                    onChange={(e) =>
-                      setNewDocument((prev) => ({
-                        ...prev,
-                        type: e.target
-                          .value as Document["type"],
-                      }))
-                    }
-                    className="w-full p-2 border border-gray-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {Object.entries(documentTypes).map(
-                      ([key, { label }]) => (
-                        <option key={key} value={key}>
-                          {label}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  説明
-                </label>
-                <Input
-                  value={newDocument.description}
-                  onChange={(e) =>
-                    setNewDocument((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="ドキュメントの説明を入力"
-                  className="rounded-xl"
-                />
-              </div>
-
-              {/* タグ管理 */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  タグ
-                </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {newDocument.tags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant="secondary"
-                      className="text-xs rounded-full"
-                    >
-                      {tag}
-                      <button
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 text-red-500 hover:text-red-700"
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="新しいタグを入力"
-                    className="rounded-xl"
-                    onKeyPress={(e) =>
-                      e.key === "Enter" && handleAddTag(newTag)
-                    }
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => handleAddTag(newTag)}
-                    disabled={!newTag.trim()}
-                    className="rounded-xl"
-                  >
-                    追加
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {defaultTags.map((tag) => (
-                    <Button
-                      key={tag}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddTag(tag)}
-                      disabled={newDocument.tags.includes(tag)}
-                      className="text-xs rounded-full"
-                    >
-                      {tag}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 最新版チェック */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isLatest"
-                  checked={newDocument.isLatest}
-                  onChange={(e) =>
-                    setNewDocument((prev) => ({
-                      ...prev,
-                      isLatest: e.target.checked,
-                    }))
-                  }
-                  className="rounded"
-                />
-                <label
-                  htmlFor="isLatest"
-                  className="text-sm font-medium"
-                >
-                  最新版としてマークする
-                </label>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  内容
-                </label>
-                <Textarea
-                  value={newDocument.content}
-                  onChange={(e) =>
-                    setNewDocument((prev) => ({
-                      ...prev,
-                      content: e.target.value,
-                    }))
-                  }
-                  placeholder="ドキュメントの内容を入力"
-                  rows={20}
-                  className="rounded-xl resize-none"
-                />
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <Button
-                  onClick={
-                    editingDocument
-                      ? handleUpdateDocument
-                      : handleCreateDocument
-                  }
-                  disabled={!newDocument.name.trim()}
-                  className="rounded-full bg-blue-600 hover:bg-blue-700"
-                >
-                  {editingDocument ? "更新" : "作成"}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsUploadDialogOpen(false);
-                    setEditingDocument(null);
-                    setNewDocument({
-                      name: "",
-                      type: "requirements-definition",
-                      description: "",
-                      content: "",
-                      tags: [],
-                      isLatest: false,
-                    });
-                  }}
-                  className="rounded-full"
-                >
-                  キャンセル
-                </Button>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="upload" className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    種別
-                  </label>
-                  <select
-                    value={newDocument.type}
-                    onChange={(e) =>
-                      setNewDocument((prev) => ({
-                        ...prev,
-                        type: e.target
-                          .value as Document["type"],
-                      }))
-                    }
-                    className="w-full p-2 border border-gray-200 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {Object.entries(documentTypes).map(
-                      ([key, { label }]) => (
-                        <option key={key} value={key}>
-                          {label}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">
-                    説明
-                  </label>
-                  <Input
-                    value={newDocument.description}
-                    onChange={(e) =>
-                      setNewDocument((prev) => ({
-                        ...prev,
-                        description: e.target.value,
-                      }))
-                    }
-                    placeholder="ドキュメントの説明を入力"
-                    className="rounded-xl"
-                  />
-                </div>
-              </div>
-
-              {/* タグ管理（アップロード時） */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  タグ
-                </label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {newDocument.tags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant="secondary"
-                      className="text-xs rounded-full"
-                    >
-                      {tag}
-                      <button
-                        onClick={() => handleRemoveTag(tag)}
-                        className="ml-1 text-red-500 hover:text-red-700"
-                      >
-                        ×
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="新しいタグを入力"
-                    className="rounded-xl"
-                    onKeyPress={(e) =>
-                      e.key === "Enter" && handleAddTag(newTag)
-                    }
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => handleAddTag(newTag)}
-                    disabled={!newTag.trim()}
-                    className="rounded-xl"
-                  >
-                    追加
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {defaultTags.map((tag) => (
-                    <Button
-                      key={tag}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddTag(tag)}
-                      disabled={newDocument.tags.includes(tag)}
-                      className="text-xs rounded-full"
-                    >
-                      {tag}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 最新版チェック（アップロード時） */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isLatestUpload"
-                  checked={newDocument.isLatest}
-                  onChange={(e) =>
-                    setNewDocument((prev) => ({
-                      ...prev,
-                      isLatest: e.target.checked,
-                    }))
-                  }
-                  className="rounded"
-                />
-                <label
-                  htmlFor="isLatestUpload"
-                  className="text-sm font-medium"
-                >
-                  最新版としてマークする
-                </label>
-              </div>
-
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center cursor-pointer hover:border-gray-400 transition-colors bg-gray-50"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-xl mb-2">
-                  ファイルをドラッグ&ドロップ
+          
+          <div className="space-y-4">
+            {/* ファイル選択 */}
+            <div>
+              <Label htmlFor="file-upload">ファイルを選択</Label>
+              <Input
+                id="file-upload"
+                type="file"
+                accept=".txt,.md,.doc,.docx,.pdf"
+                onChange={handleFileSelect}
+                className="mt-1"
+              />
+              {selectedFile && (
+                <p className="text-sm text-gray-600 mt-1">
+                  選択されたファイル: {selectedFile.name} ({formatFileSize(selectedFile.size)})
                 </p>
-                <p className="text-sm text-gray-500">
-                  または、クリックしてファイルを選択
-                </p>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  onChange={handleFileUpload}
-                  className="hidden"
-                  accept=".txt,.md,.doc,.docx,.pdf"
-                />
-              </div>
-            </TabsContent>
-          </Tabs>
+              )}
+            </div>
+
+            {/* ドキュメント情報 */}
+            <div>
+              <Label htmlFor="doc-name">ドキュメント名</Label>
+              <Input
+                id="doc-name"
+                value={newDocument.name}
+                onChange={(e) => setNewDocument(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="ドキュメント名を入力"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="doc-type">種別</Label>
+              <select
+                id="doc-type"
+                value={newDocument.type}
+                onChange={(e) => setNewDocument(prev => ({ ...prev, type: e.target.value as Document["type"] }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-1"
+              >
+                <option value="requirements-definition">要件定義</option>
+                <option value="basic-design">基本設計</option>
+                <option value="external-design">外部設計</option>
+                <option value="development-prep">開発準備</option>
+                <option value="other">その他</option>
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="doc-description">説明</Label>
+              <Textarea
+                id="doc-description"
+                value={newDocument.description}
+                onChange={(e) => setNewDocument(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="ドキュメントの説明"
+                className="mt-1"
+                rows={3}
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="is-latest"
+                checked={newDocument.isLatest}
+                onChange={(e) => setNewDocument(prev => ({ ...prev, isLatest: e.target.checked }))}
+                className="rounded"
+              />
+              <Label htmlFor="is-latest">最新版としてマーク</Label>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2 mt-6">
+            <Button variant="outline" onClick={() => {
+              setIsUploadDialogOpen(false);
+              setSelectedFile(null);
+              setNewDocument({
+                name: "",
+                type: "requirements-definition",
+                description: "",
+                content: "",
+                tags: [],
+                isLatest: false,
+              });
+            }}>
+              キャンセル
+            </Button>
+            <Button 
+              onClick={handleFileUpload}
+              disabled={!selectedFile || !newDocument.name.trim()}
+            >
+              作成
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
